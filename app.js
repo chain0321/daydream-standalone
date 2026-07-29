@@ -502,14 +502,9 @@
   }
 
   function renderExpression() {
-    var selectedCardArt = BASE_TAROT_ART[state.base] || "";
-    var selectedCardImage = selectedCardArt
-      ? '<img src="' + selectedCardArt + '" alt="" aria-hidden="true">'
-      : "";
     return onboardingShell(
       '<div class="expression-figma-screen">' +
-        '<div class="selected-tarot-card' + (selectedCardArt ? ' has-card-art' : '') + '" aria-label="已选择母题：' + esc(state.selectedPrimaryTheme) + '">' +
-          selectedCardImage +
+        '<div class="selected-theme-orb" aria-label="已选择母题：' + esc(state.selectedPrimaryTheme) + '">' +
           '<span>世界母题</span>' +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
