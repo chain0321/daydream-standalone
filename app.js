@@ -11,6 +11,7 @@
     domain: "",
     material: "",
     selectedMaterialPreview: "",
+    materialFlipOpen: false,
     base: "",
     primaryThemes: [],
     selectedPrimaryTheme: "",
@@ -404,30 +405,39 @@
         var mid = materialKeys[mi];
         var m = MATERIALS[mid];
         var isSelected = state.selectedMaterialPreview === mid;
-        materialCards += '<button class="material-illustration-card' + (isSelected ? ' selected' : '') + '" ' +
-          'role="listitem" data-action="preview-material" data-value="' + mid + '" ' +
-          'aria-label="选择' + esc(m.name) + '" aria-pressed="' + (isSelected ? "true" : "false") + '">' +
-          '<img src="' + materialAssets[mid] + '" alt="" aria-hidden="true">' +
-          '<span class="material-title-wash" aria-hidden="true"></span>' +
-          '<strong>' + m.name + '</strong>' +
-        '</button>';
+        if (isSelected && state.materialFlipOpen) {
+          var inlineThemes = "";
+          for (var ft = 0; ft < state.primaryThemes.length; ft++) {
+            var flipTheme = state.primaryThemes[ft];
+            inlineThemes += '<button class="flip-theme-option" role="listitem" ' +
+              'data-action="choose-primary" data-id="' + flipTheme.id + '" data-name="' + esc(flipTheme.name) + '" ' +
+              'aria-label="选择母题' + esc(flipTheme.name) + '">' +
+              '<span class="flip-theme-index">0' + (ft + 1) + '</span>' +
+              '<strong>' + esc(flipTheme.name) + '</strong>' +
+            '</button>';
+          }
+          materialCards += '<div class="material-illustration-card material-inline-flip selected" role="listitem" ' +
+            'aria-label="' + esc(m.name) + '的五个一级母题">' +
+              '<div class="material-inline-back">' +
+                '<button class="material-inline-close" data-action="close-material-flip" aria-label="翻回' + esc(m.name) + '图面">↶</button>' +
+                '<span class="material-flip-kicker">' + esc(m.name) + '</span>' +
+                '<div class="material-flip-themes" role="list" aria-label="选择一级母题">' + inlineThemes + '</div>' +
+              '</div>' +
+            '</div>';
+        } else {
+          materialCards += '<button class="material-illustration-card' + (isSelected ? ' selected' : '') + '" ' +
+            'role="listitem" data-action="preview-material" data-value="' + mid + '" ' +
+            'aria-label="选择' + esc(m.name) + '" aria-pressed="' + (isSelected ? "true" : "false") + '">' +
+            '<img src="' + materialAssets[mid] + '" alt="" aria-hidden="true">' +
+            '<span class="material-title-wash" aria-hidden="true"></span>' +
+            '<strong>' + m.name + '</strong>' +
+          '</button>';
+        }
       }
       var selectedMaterial = MATERIALS[state.selectedMaterialPreview];
-      var confirmHtml = '<div class="material-confirm-bar' + (selectedMaterial ? ' visible' : '') + '">' +
-        '<button data-action="choose-material" data-value="' + (selectedMaterial ? state.selectedMaterialPreview : '') + '"' +
-          (selectedMaterial ? '' : ' disabled') + '>' +
-          '<span data-material-confirm-label>' + (selectedMaterial ? '进入' + esc(selectedMaterial.name) : '选择一条矿脉') + '</span>' +
-          '<b>→</b>' +
-        '</button>' +
-      '</div>';
       return onboardingShell(
         '<div class="archaeology-base-screen">' +
-          '<div class="archaeology-base-heading">' +
-            '<span class="eyebrow">03 · 选择叙事矿脉</span>' +
-            '<h1>从哪一条矿脉开始挖掘？</h1>' +
-          '</div>' +
           '<div class="material-illustration-grid' + (selectedMaterial ? ' has-selection' : '') + '" role="list" aria-label="选择叙事矿脉">' + materialCards + '</div>' +
-          confirmHtml +
         '</div>',
         {
           wide: true,
@@ -2275,6 +2285,23 @@
   }
 
   function goBack() {
+    if (state.materialFlipOpen) {
+      setState({ material: "", selectedMaterialPreview: "", materialFlipOpen: false });
+      return;
+    }
+    if (state.phase === "expression" && state.domain === "archaeology") {
+      setState({
+        phase: "base",
+        material: "",
+        selectedMaterialPreview: "",
+        materialFlipOpen: false,
+        selectedPrimaryTheme: "",
+        selectedPrimaryThemeId: "",
+        userExpression: "",
+        secondaryThemes: []
+      });
+      return;
+    }
     var index = stepIndex();
     if (index <= 0) return;
     var previous = PHASES[index - 1];
@@ -2287,6 +2314,7 @@
     if (previous === "domain") {
       reset.domain = "";
       reset.material = "";
+      reset.materialFlipOpen = false;
       reset.base = "";
       reset.primaryThemes = [];
       reset.selectedPrimaryTheme = "";
@@ -2295,6 +2323,8 @@
     }
     if (previous === "base") {
       reset.material = "";
+      reset.selectedMaterialPreview = "";
+      reset.materialFlipOpen = false;
       reset.base = "";
       reset.primaryThemes = [];
       reset.selectedPrimaryTheme = "";
@@ -2553,27 +2583,19 @@
     if (action === "choose-tone") {
       setState({ tone: target.dataset.value, phase: "domain", restored: false });
     } else if (action === "choose-domain") {
-      setState({ domain: target.dataset.value, selectedMaterialPreview: "", phase: "base" });
+      setState({ domain: target.dataset.value, selectedMaterialPreview: "", materialFlipOpen: false, phase: "base" });
     } else if (action === "preview-material") {
       var previewMaterial = target.dataset.value;
-      setState({ selectedMaterialPreview: previewMaterial }, false);
-      var materialOptions = document.querySelectorAll(".material-illustration-card");
-      var materialGrid = document.querySelector(".material-illustration-grid");
-      if (materialGrid) materialGrid.classList.add("has-selection");
-      for (var mo = 0; mo < materialOptions.length; mo++) {
-        var optionSelected = materialOptions[mo].dataset.value === previewMaterial;
-        materialOptions[mo].classList.toggle("selected", optionSelected);
-        materialOptions[mo].setAttribute("aria-pressed", optionSelected ? "true" : "false");
-      }
-      var confirmBar = document.querySelector(".material-confirm-bar");
-      var confirmButton = confirmBar ? confirmBar.querySelector("[data-action='choose-material']") : null;
-      if (confirmBar && confirmButton) {
-        confirmBar.classList.add("visible");
-        confirmButton.disabled = false;
-        confirmButton.dataset.value = previewMaterial;
-        var confirmLabel = confirmButton.querySelector("[data-material-confirm-label]");
-        if (confirmLabel) confirmLabel.textContent = "进入" + MATERIALS[previewMaterial].name;
-      }
+      state = Object.assign({}, state, { material: previewMaterial });
+      setState({
+        material: previewMaterial,
+        selectedMaterialPreview: previewMaterial,
+        materialFlipOpen: true,
+        primaryThemes: drawThemes(),
+        selectedSpreadPosition: clone(DEFAULT_STATE.selectedSpreadPosition)
+      });
+    } else if (action === "close-material-flip") {
+      setState({ material: "", selectedMaterialPreview: "", materialFlipOpen: false });
     } else if (action === "choose-material") {
       var material = target.dataset.value;
       state = Object.assign({}, state, { material: material });
@@ -2596,6 +2618,7 @@
       setState({
         selectedPrimaryTheme: target.dataset.name,
         selectedPrimaryThemeId: target.dataset.id,
+        materialFlipOpen: false,
         selectedSpreadPosition: {
           key: target.dataset.positionKey || "",
           label: target.dataset.positionLabel || "",
