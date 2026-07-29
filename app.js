@@ -10,6 +10,7 @@
     tone: "",
     domain: "",
     material: "",
+    selectedMaterialPreview: "",
     base: "",
     primaryThemes: [],
     selectedPrimaryTheme: "",
@@ -387,30 +388,52 @@
   function renderBase() {
     // Archaeology fork: show 8 material/mine options
     if (state.domain === "archaeology") {
+      var materialAssets = {
+        history: "素材/archaeology/history.png",
+        myth: "素材/archaeology/myth.png",
+        literature: "素材/archaeology/literature.png",
+        anime: "素材/archaeology/anime.png",
+        martial: "素材/archaeology/martial.png",
+        mystery: "素材/archaeology/mystery.png",
+        scene: "素材/archaeology/scene.png",
+        person: "素材/archaeology/person.png"
+      };
       var materialCards = "";
       var materialKeys = Object.keys(MATERIALS);
       for (var mi = 0; mi < materialKeys.length; mi++) {
         var mid = materialKeys[mi];
         var m = MATERIALS[mid];
-        var mHints = "";
-        for (var mj = 0; mj < m.hints.length; mj++) {
-          mHints += "<i>" + m.hints[mj] + "</i>";
-        }
-        materialCards += '<button class="base-card" data-action="choose-material" data-value="' + mid + '">' +
-          '<span class="base-mark">' + m.mark + '</span>' +
+        var isSelected = state.selectedMaterialPreview === mid;
+        materialCards += '<button class="material-illustration-card' + (isSelected ? ' selected' : '') + '" ' +
+          'role="listitem" data-action="preview-material" data-value="' + mid + '" ' +
+          'aria-label="选择' + esc(m.name) + '" aria-pressed="' + (isSelected ? "true" : "false") + '">' +
+          '<img src="' + materialAssets[mid] + '" alt="" aria-hidden="true">' +
+          '<span class="material-title-wash" aria-hidden="true"></span>' +
           '<strong>' + m.name + '</strong>' +
-          '<small>' + m.desc + '</small>' +
-          '<span class="hint-row">' + mHints + '</span>' +
         '</button>';
       }
+      var selectedMaterial = MATERIALS[state.selectedMaterialPreview];
+      var confirmHtml = '<div class="material-confirm-bar' + (selectedMaterial ? ' visible' : '') + '">' +
+        '<button data-action="choose-material" data-value="' + (selectedMaterial ? state.selectedMaterialPreview : '') + '"' +
+          (selectedMaterial ? '' : ' disabled') + '>' +
+          '<span data-material-confirm-label>' + (selectedMaterial ? '进入' + esc(selectedMaterial.name) : '选择一条矿脉') + '</span>' +
+          '<b>→</b>' +
+        '</button>' +
+      '</div>';
       return onboardingShell(
-        '<div class="step-heading compact">' +
-          '<span class="eyebrow">03 · 选择叙事矿脉</span>' +
-          '<h1>从哪一条矿脉<br>开始挖掘？</h1>' +
-          '<p>矿脉决定了世界调用的叙事来源——真实历史、神话系统、文学传统……</p>' +
-        '</div>' +
-        '<div class="base-grid">' + materialCards + '</div>',
-        { wide: true }
+        '<div class="archaeology-base-screen">' +
+          '<div class="archaeology-base-heading">' +
+            '<span class="eyebrow">03 · 选择叙事矿脉</span>' +
+            '<h1>从哪一条矿脉开始挖掘？</h1>' +
+          '</div>' +
+          '<div class="material-illustration-grid' + (selectedMaterial ? ' has-selection' : '') + '" role="list" aria-label="选择叙事矿脉">' + materialCards + '</div>' +
+          confirmHtml +
+        '</div>',
+        {
+          wide: true,
+          contentClass: "archaeology-base-content",
+          shellClass: "archaeology-base-page"
+        }
       );
     }
 
@@ -2530,12 +2553,33 @@
     if (action === "choose-tone") {
       setState({ tone: target.dataset.value, phase: "domain", restored: false });
     } else if (action === "choose-domain") {
-      setState({ domain: target.dataset.value, phase: "base" });
+      setState({ domain: target.dataset.value, selectedMaterialPreview: "", phase: "base" });
+    } else if (action === "preview-material") {
+      var previewMaterial = target.dataset.value;
+      setState({ selectedMaterialPreview: previewMaterial }, false);
+      var materialOptions = document.querySelectorAll(".material-illustration-card");
+      var materialGrid = document.querySelector(".material-illustration-grid");
+      if (materialGrid) materialGrid.classList.add("has-selection");
+      for (var mo = 0; mo < materialOptions.length; mo++) {
+        var optionSelected = materialOptions[mo].dataset.value === previewMaterial;
+        materialOptions[mo].classList.toggle("selected", optionSelected);
+        materialOptions[mo].setAttribute("aria-pressed", optionSelected ? "true" : "false");
+      }
+      var confirmBar = document.querySelector(".material-confirm-bar");
+      var confirmButton = confirmBar ? confirmBar.querySelector("[data-action='choose-material']") : null;
+      if (confirmBar && confirmButton) {
+        confirmBar.classList.add("visible");
+        confirmButton.disabled = false;
+        confirmButton.dataset.value = previewMaterial;
+        var confirmLabel = confirmButton.querySelector("[data-material-confirm-label]");
+        if (confirmLabel) confirmLabel.textContent = "进入" + MATERIALS[previewMaterial].name;
+      }
     } else if (action === "choose-material") {
       var material = target.dataset.value;
       state = Object.assign({}, state, { material: material });
       setState({
         material: material,
+        selectedMaterialPreview: material,
         primaryThemes: drawThemes(),
         selectedSpreadPosition: clone(DEFAULT_STATE.selectedSpreadPosition),
         phase: "primary"
