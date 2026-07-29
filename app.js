@@ -406,19 +406,25 @@
     var toneLabel = state.tone === "light" ? "光明" : "黑暗";
     var domainHint = state.domain === "archaeology" && state.material ? "现存·" + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
     return onboardingShell(
-      '<div class="step-heading compact center">' +
+      '<div class="tarot-draw-screen">' +
+      '<div class="tarot-draw-heading">' +
         '<span class="eyebrow">04 · 抽取一级母题</span>' +
         '<h1>五张牌，哪一张<br>先叫住了你？</h1>' +
         '<p>' + toneLabel + ' · ' + esc(domainHint) + ' 已改变了牌阵的概率。</p>' +
       '</div>' +
-      '<div class="tarot-spread" role="list" aria-label="本轮五个一级母题">' + cards + '</div>' +
-      '<div class="spread-actions">' +
+      '<div class="tarot-spread tarot-draw-spread" role="list" aria-label="本轮五个一级母题">' + cards + '</div>' +
+      '<div class="spread-actions tarot-draw-actions">' +
         '<button class="text-button" data-action="refresh-themes"' + (state.themeRefreshUsed ? " disabled" : "") + '>' +
           '<span>↻</span> ' + (state.themeRefreshUsed ? "已经换过一组" : "换一组 · 仅一次") +
         '</button>' +
       '</div>' +
-      '<p class="whisper">同一牌阵不会出现重复或高度相近的母题。</p>',
-      { wide: true }
+      '<p class="whisper tarot-draw-whisper">同一牌阵不会出现重复或高度相近的母题。</p>' +
+      '</div>',
+      {
+        wide: true,
+        contentClass: "tarot-draw-content",
+        shellClass: "tarot-draw-page"
+      }
     );
   }
 

@@ -2951,6 +2951,144 @@ textarea {
   }
 }
 
+/* Figma wizard canvas — primary theme draw */
+.onboarding.tarot-draw-page::before {
+  background: none;
+  filter: none;
+}
+
+.tarot-draw-page .ink-figure {
+  display: none;
+}
+
+.tarot-draw-page .onboarding-header {
+  z-index: 3;
+  background: transparent;
+}
+
+.tarot-draw-page .progress {
+  z-index: 3;
+}
+
+.tarot-draw-page .restore-note {
+  display: none;
+}
+
+.onboarding-content.tarot-draw-content {
+  position: relative;
+  top: calc(-67px - env(safe-area-inset-top));
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.tarot-draw-screen {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 375 / 812;
+  overflow: hidden;
+  background-color: #eadbd4;
+  background-image: url("素材/figma-base/hall-background.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.tarot-draw-heading {
+  position: absolute;
+  top: 39.2%;
+  left: 7%;
+  z-index: 2;
+  width: 86%;
+  text-align: center;
+}
+
+.tarot-draw-heading .eyebrow {
+  margin-bottom: 5px;
+  font-size: 9px;
+  text-shadow: 0 1px 7px rgba(246, 234, 228, .96);
+}
+
+.tarot-draw-heading h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(20px, 5.6vw, 24px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: .07em;
+  text-shadow: 0 1px 9px rgba(246, 234, 228, .98);
+}
+
+.tarot-draw-heading p {
+  margin: 7px 0 0;
+  color: rgba(33, 29, 27, .62);
+  font-family: var(--serif);
+  font-size: clamp(10px, 2.8vw, 12px);
+  line-height: 1.5;
+  text-shadow: 0 1px 7px rgba(246, 234, 228, .98);
+}
+
+.tarot-draw-page .tarot-draw-spread {
+  position: absolute;
+  top: 55.3%;
+  left: 5%;
+  width: 90%;
+  height: auto;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  transform: none;
+}
+
+.tarot-draw-page .theme-card,
+.tarot-draw-page .theme-card:nth-child(n),
+.tarot-draw-page .theme-card:nth-child(n):active {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 41 / 80;
+  transform: none;
+}
+
+.tarot-draw-page .theme-card:active,
+.tarot-draw-page .theme-card:nth-child(n):active {
+  transform: translateY(-8px);
+}
+
+.tarot-draw-page .theme-index {
+  top: 9px;
+}
+
+.tarot-draw-page .theme-card strong {
+  bottom: 14px;
+  font-size: clamp(13px, 3.7vw, 16px);
+}
+
+.tarot-draw-page .tarot-draw-actions {
+  position: absolute;
+  top: 74.5%;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  text-align: center;
+}
+
+.tarot-draw-page .tarot-draw-whisper {
+  position: absolute;
+  top: 80%;
+  left: 8%;
+  width: 84%;
+  margin: 0;
+  text-align: center;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
