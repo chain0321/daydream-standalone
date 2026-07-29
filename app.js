@@ -418,10 +418,18 @@
           }
           materialCards += '<div class="material-illustration-card material-inline-flip selected" role="listitem" ' +
             'aria-label="' + esc(m.name) + '的五个一级母题">' +
-              '<div class="material-inline-back">' +
-                '<button class="material-inline-close" data-action="close-material-flip" aria-label="翻回' + esc(m.name) + '图面">↶</button>' +
-                '<span class="material-flip-kicker">' + esc(m.name) + '</span>' +
-                '<div class="material-flip-themes" role="list" aria-label="选择一级母题">' + inlineThemes + '</div>' +
+              '<div class="material-inline-stage">' +
+                '<div class="material-inline-face material-inline-front">' +
+                  '<img src="' + materialAssets[mid] + '" alt="" aria-hidden="true">' +
+                  '<span class="material-title-wash" aria-hidden="true"></span>' +
+                  '<strong>' + esc(m.name) + '</strong>' +
+                  '<span class="material-inline-color" aria-hidden="true"></span>' +
+                '</div>' +
+                '<div class="material-inline-face material-inline-back">' +
+                  '<button class="material-inline-close" data-action="close-material-flip" aria-label="翻回' + esc(m.name) + '图面">↶</button>' +
+                  '<span class="material-flip-kicker">' + esc(m.name) + '</span>' +
+                  '<div class="material-flip-themes" role="list" aria-label="选择一级母题">' + inlineThemes + '</div>' +
+                '</div>' +
               '</div>' +
             '</div>';
         } else {
