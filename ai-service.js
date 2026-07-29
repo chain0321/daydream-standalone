@@ -7,6 +7,44 @@
     timeout: 60000
   };
 
+  /* ====== 全局气质：由首页选择，并贯穿抽牌、生成与世界互动 ====== */
+  var TONE_PROFILES = {
+    light: {
+      label: "光明",
+      secondaryArchaeology: "用户选择了光明基调。主题维度词可偏向修复、传承、尚存的秩序、可辨认的痕迹与重新建立连接的角度，但不要直接使用情绪判断词。",
+      secondaryFiction: "用户选择了光明基调。联想词可偏向发现、修复、连接、传承与重新选择，但必须保留阻力、风险或真实代价。",
+      seedDirective: [
+        "【全局基调：光明】",
+        "光明不等于安全、善良或必然治愈。冲突、损失与代价仍须真实存在。",
+        "优先让世界显露修复、传承、发现、连接或重新选择的可能；这种可能必须通过人物行动争取，而不是自动降临。",
+        "结尾保留一处可行动、可辨认或可挽回的缝隙，但不要强行圆满。"
+      ].join("\n"),
+      responseDirective: "【光明基调】保持事实不变，在措辞与关注点上优先呈现修复、连接或重新选择的可能；不要保证圆满，也不要消除已经成立的代价。",
+      storyDirective: "【光明基调】叙事可以沉重，但应让人物仍拥有一处可行动、可连接或可重新选择的余地；不要用巧合强行治愈。",
+      guideDirective: "【光明基调】新的提示优先指向仍可修复的关系、可继承的痕迹、可重新打开的路径，但不能绕过已有风险与代价。",
+      extractionDirective: "气质只影响叙事取景，不是世界事实。不要因为光明基调而额外提取“治愈”“希望”等公理或规则。"
+    },
+    dark: {
+      label: "黑暗",
+      secondaryArchaeology: "用户选择了黑暗基调。主题维度词可偏向底层、边缘、禁忌、被遗忘的角落、沉默的代价与隐藏秩序，但不要直接使用情绪判断词。",
+      secondaryFiction: "用户选择了黑暗基调。联想词可偏向暗流、禁忌、代价、隐藏秩序与不可逆变化，但不要把方向收窄为血腥、邪恶或必然悲剧。",
+      seedDirective: [
+        "【全局基调：黑暗】",
+        "黑暗不等于血腥、邪恶或必然绝望。世界仍需克制、可信，并允许人物保有选择。",
+        "优先让世界显露禁忌、隐藏秩序、古老代价、逼近的危机或不可逆后果；它们必须来自具体处境，而不是空洞渲染。",
+        "结尾保留一处尚未揭开的真相或必须承担的选择，但不要为了阴沉而制造无意义伤害。"
+      ].join("\n"),
+      responseDirective: "【黑暗基调】保持事实不变，在措辞与关注点上优先呈现代价、禁忌、隐藏秩序或不可逆后果；不要自动消解不安，也不要额外渲染血腥与绝望。",
+      storyDirective: "【黑暗基调】让暗流、代价与隐藏秩序持续产生后果，但保持克制；不要把所有选择都写成失败，也不要添加无依据的伤害。",
+      guideDirective: "【黑暗基调】新的提示优先指向被遮蔽的关系、尚未偿还的代价、禁忌或隐藏秩序，但不要凭空制造暴力与绝望。",
+      extractionDirective: "气质只影响叙事取景，不是世界事实。不要因为黑暗基调而额外提取“诅咒”“阴谋”等公理或规则。"
+    }
+  };
+
+  function toneProfile(tone) {
+    return TONE_PROFILES[tone === "dark" ? "dark" : "light"];
+  }
+
   /* ====== Mock 词库（API 失败时回退） ====== */
   var SECONDARY_LIBRARY = {
     power: ["影响", "服从", "边界", "腐化", "掌控"],
@@ -514,6 +552,7 @@
 
   /* ====== 1. 生成二级联想词 ====== */
   async function generateSecondaryThemes(params) {
+    var activeTone = toneProfile(params.tone);
     var previousInfo = "";
     if (params.previousSeeds && params.previousSeeds.length > 0) {
       var prevList = params.previousSeeds.map(function (s, i) {
@@ -570,13 +609,7 @@
       "5. 不生成完整问句。",
       "6. 不解释词义。",
       "7. 只返回JSON数组。",
-      "8. " + (isArchaeology
-        ? (params.tone === "dark"
-          ? "用户倾向沉缓的底色——主题维度词可自然偏向暗面视角：底层、边缘、被遗忘的角落、沉默的代价。但不要直接使用情绪词。"
-          : "用户倾向明亮的底色——主题维度词可自然偏向重建视角：修复、传承、尚存的秩序、可被辨认的痕迹。但不要直接使用情绪词。")
-        : (params.tone === "dark"
-          ? "用户倾向沉缓的底色——联想词可自然偏向暗流、代价、隐藏的秩序、不可逆的变化。"
-          : "用户倾向明亮的底色——联想词可自然偏向发现、遗迹、奇物、可以被修复的裂痕。")),
+      "8. " + (isArchaeology ? activeTone.secondaryArchaeology : activeTone.secondaryFiction),
       previousInfo ? "9. 避开用户已经尝试过的方向，从崭新的角度切入。" : "",
       archaeologyInstructions,
       "",
@@ -648,7 +681,8 @@
 
   /* ====== 2. 生成世界种子 ====== */
   async function generateWorldSeed(params, onChunk) {
-    var toneLabel = params.tone === "light" ? "光明" : "黑暗";
+    var activeTone = toneProfile(params.tone);
+    var toneLabel = activeTone.label;
     var baseLabels = { reality: "现实世界", scifi: "科幻世界", fantasy: "幻想世界", psyche: "心灵世界" };
     var materialLabels = { history: "历史", myth: "神话志怪", literature: "文学影视", anime: "二次元", martial: "武侠", mystery: "悬疑", scene: "现场", person: "人物" };
     var isArchaeology = params.domain === "archaeology";
@@ -842,7 +876,7 @@
       "- 不列规则、不写完整设定、不解释含义。",
       "- 人物、原因、世界法则全部留空。",
       "- 不要过度发明专有概念名词。世界种子的吸引力来自情境和异常，而非生造术语。每段最多出现 1—2 个具名的设定概念，其余用日常语言描述。",
-      "- " + (params.tone === "light" ? "底色偏亮：这个世界可能藏有失落的技艺、尚能挽回的事物、未被命名的生灵——但这不是必然，只是倾向。" : "底色偏沉：这个世界可能藏有古老的代价、正在逼近的危机、被修改过的真相——但这不是必然，只是倾向。"),
+      activeTone.seedDirective,
       params.rejectedWorlds && params.rejectedWorlds.length > 0
         ? "- 以下世界已被用户看过但拒绝进入，请生成与它们完全不同类型的世界种子（不同的地点、不同的异常形态、不同的进入方式）：" + params.rejectedWorlds.map(function (w, i) { return "反例" + (i + 1) + "：" + w.title + "（方向词：" + w.secondaryTheme + "）"; }).join("；")
         : "",
@@ -1015,6 +1049,7 @@
 
   /* ====== 3.5 从世界种子提取初始实体/地点/事件/设定 ====== */
   async function extractSeedEntities(worldSeed, tone, domain, material) {
+    var activeTone = toneProfile(tone);
     var seedTitle = worldSeed && worldSeed.title ? worldSeed.title : "";
     var seedBody = worldSeed ? (worldSeed.bodyExpanded || worldSeed.body || "") : "";
     if (!seedBody || seedBody.length < 20) return null;
@@ -1051,6 +1086,7 @@
       "- 不要编造名字——如果角色没有被命名，不要给它取名。只提取已经在文本中出现的名字或称呼。",
       "- axioms 和 rules 通常很少（0—1 条），不要过度提取。",
       "- events 最多 1 条（种子的核心情境本身就是一个事件）。",
+      activeTone.extractionDirective,
       borderHint ? "【世界观背景】" + borderHint + "\n请根据这个世界观底色，判断哪些描述属于'世界法则'级别。" : "",
       "",
       "返回严格JSON：",
@@ -1125,7 +1161,8 @@
   }
 
   /* ====== 3.6 渐进式生成提示卡与探索方向 ====== */
-  async function generateAdditionalGuides(worldSeed, worldState, interactionLog, existingHints, existingQuests, mockKey) {
+  async function generateAdditionalGuides(worldSeed, worldState, interactionLog, existingHints, existingQuests, mockKey, tone) {
+    var activeTone = toneProfile(tone);
     // 提取世界种子摘要
     var seedTitle = worldSeed && worldSeed.title ? worldSeed.title : "";
     var seedContext = worldSeed && worldSeed.bodyExpanded ? worldSeed.bodyExpanded : "";
@@ -1177,6 +1214,7 @@
       "3. 优先指向：尚未解释的设定、已有事件的自然后果、已被提及但未深挖的人物或地点。",
       "4. 如果世界还很空（几乎没有设定和事件），则基于世界种子的初始情境来生成。",
       "5. 如果世界已经有丰富的设定和事件，则基于它们的张力和未解之处来生成。",
+      "6. " + activeTone.guideDirective,
       "",
       "【格式】",
       "hints 每条是 { \"label\": \"类别\", \"value\": \"简短内容，15字以内\" }",
@@ -1302,6 +1340,7 @@
   }
 
   async function processWorldInput(session, input) {
+    var activeTone = toneProfile(session.tone);
     var intent = inferIntent(input);
     if (intent === "meta") {
       return { intent: intent, level: null, result: "deferred", patches: [], response: "这是一条创作讨论，我会把它留在世界事实之外。你可以继续讨论写法；只有明确发生在世界里的行动或设定，才会接受一致性检定。" };
@@ -1340,7 +1379,7 @@
           "用中文回答，保持与这个世界一致的语调。",
           "回答控制在100字以内。",
           "不要发明新的世界事实。只基于已有档案。",
-          session.tone === "dark" ? "这个世界的底色偏沉——暗流、代价、被隐藏的秩序可能蛰伏其中。回答时不需点破，但不必急于消解不安。" : "这个世界的底色偏亮——遗迹、奇物、尚可修复的事物可能散落其间。回答时不需保证，但留一些重新打开的余地。",
+          activeTone.responseDirective,
           identityContext
         ].filter(Boolean).join("\n");
 
@@ -1427,7 +1466,7 @@
         "   · entities：用户输入中提到的人物名（数组，没有则为空数组）",
         "   · location：用户输入中提到的具体地点名（字符串，没有则为空字符串）",
         "   · relationships：用户输入中明确描述的人物关系（数组，每项包含 from、to、type；没有则为空数组）",
-        "6. 返回一段 40—80 字的中文回应。" + (session.tone === "dark" ? "这个世界的底色偏沉——暗流、代价与隐藏的秩序是可能的暗面，但不需每次都显现。" : "这个世界的底色偏亮——遗迹、奇物与可被修复的事物是可能的亮面，但不需每次都兑现。"),
+        "6. 返回一段 40—80 字的中文回应。" + activeTone.responseDirective,
         identityContext2,
         "",
         "返回严格JSON：",
@@ -1593,6 +1632,7 @@
 
   /* ====== 5. 生成回响 ====== */
   async function generateEcho(session, startIndex, endIndex) {
+    var activeTone = toneProfile(session.tone);
     var records = session.interactionLog.slice(startIndex, endIndex + 1)
       .filter(function (item) {
         return item.intent === "world_action" && ["conflict", "deferred"].indexOf(item.result) === -1 && !item.retracted;
@@ -1608,7 +1648,7 @@
         "",
         "要求：",
         "1. 这不是事实列表，也不是普通摘要，而是正式故事。",
-        "2. 以文学化但不浮夸的中文书写。" + (session.tone === "dark" ? "叙述的底色偏沉——暗流、代价与隐藏的秩序可能蛰伏其间，但不必渲染黑暗。" : "叙述的底色偏亮——遗迹、奇物与可被修复的事物可能散落其间，但不必回避沉重。"),
+        "2. 以文学化但不浮夸的中文书写。" + activeTone.storyDirective,
         "3. 保留世界名称、地点名和人物的原名。",
         "4. 将分散的世界行动串成有因果的叙事。",
         "5. 控制在150—250字。",
@@ -1661,6 +1701,7 @@
 
   /* ====== 6. 档案查询 ====== */
   async function queryArchive(view, worldState, question, tone, worldSeed) {
+    var activeTone = toneProfile(tone);
     var viewLabels = { settings: "世界设定", timeline: "历史时间线", characters: "人物与关系", locations: "空间与地点" };
     var label = viewLabels[view] || view;
 
@@ -1693,7 +1734,7 @@
         "你只能根据已经通过检定的世界事实回答用户的查询。",
         "如果事实不足以给出完整回答，诚实说明哪些部分尚未被写定。",
         "用中文回答。",
-        tone === "dark" ? "这个世界的底色偏沉——暗流、代价、被隐藏的秩序可能蛰伏其中。回答时不需点破，但不必急于消解不安。" : "这个世界的底色偏亮——遗迹、奇物、尚可修复的事物可能散落其间。回答时不需保证，但留一些重新打开的余地。",
+        activeTone.responseDirective,
         "回答严格基于已有档案，不编造新事实。",
         "本次查询不会自动写入故事正文。",
         "回答控制在120字以内。"

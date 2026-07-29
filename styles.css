@@ -71,6 +71,28 @@ textarea {
   background-color: var(--paper);
 }
 
+.tone-light {
+  --tone-tarot-guide: url("素材/竖版背景（光明）.png");
+  --tone-ritual-guide: url("素材/竖版背景（光明）.png");
+  --tone-ritual-wash: linear-gradient(
+    180deg,
+    rgba(247, 239, 234, .04),
+    rgba(247, 239, 234, .1) 44%,
+    rgba(247, 239, 234, .18)
+  );
+}
+
+.tone-dark {
+  --tone-tarot-guide: url("素材/figma-base/hall-background.png");
+  --tone-ritual-guide: url("素材/figma-expression/wizard-background.png");
+  --tone-ritual-wash: linear-gradient(
+    180deg,
+    rgba(247, 239, 234, .12),
+    rgba(247, 239, 234, .18) 44%,
+    rgba(247, 239, 234, .28)
+  );
+}
+
 /* Paper texture overlay — CSS-only, no external image */
 .onboarding::before,
 .world-workspace::before {
@@ -1237,7 +1259,7 @@ textarea {
   border: 1px solid rgba(157, 24, 20, .62);
   background:
     linear-gradient(rgba(241, 227, 220, .9), rgba(232, 211, 202, .94)),
-    url("素材/figma-expression/wizard-background.png") center / cover;
+    var(--tone-ritual-guide, url("素材/figma-expression/wizard-background.png")) center / cover;
   box-shadow:
     0 8px 20px rgba(66, 33, 27, .14),
     0 0 0 2px rgba(157, 24, 20, .1);
@@ -1399,7 +1421,7 @@ textarea {
   align-items: center;
   background:
     linear-gradient(rgba(239, 224, 216, .91), rgba(232, 213, 204, .94)),
-    url("素材/figma-expression/wizard-background.png") center / cover;
+    var(--tone-ritual-guide, url("素材/figma-expression/wizard-background.png")) center / cover;
 }
 
 .material-flip-close {
@@ -2075,7 +2097,7 @@ textarea {
   aspect-ratio: 375 / 814;
   overflow: hidden;
   background-color: #eadbd4;
-  background-image: url("素材/figma-expression/wizard-background.png");
+  background-image: var(--tone-ritual-guide, url("素材/figma-expression/wizard-background.png"));
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -2086,12 +2108,7 @@ textarea {
   inset: 0;
   z-index: 0;
   content: "";
-  background: linear-gradient(
-    180deg,
-    rgba(247, 239, 234, .12),
-    rgba(247, 239, 234, .18) 45%,
-    rgba(247, 239, 234, .24)
-  );
+  background: var(--tone-ritual-wash);
   pointer-events: none;
 }
 
@@ -3440,7 +3457,7 @@ textarea {
   aspect-ratio: 375 / 814;
   overflow: hidden;
   background-color: #eadbd4;
-  background-image: url("素材/figma-expression/wizard-background.png");
+  background-image: var(--tone-ritual-guide, url("素材/figma-expression/wizard-background.png"));
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
@@ -3452,13 +3469,7 @@ textarea {
   inset: 0;
   z-index: 0;
   content: "";
-  background: linear-gradient(
-    180deg,
-    rgba(247, 239, 234, .12) 0%,
-    rgba(247, 239, 234, .18) 31%,
-    rgba(247, 239, 234, .28) 68%,
-    rgba(247, 239, 234, .36) 100%
-  );
+  background: var(--tone-ritual-wash);
   pointer-events: none;
 }
 
@@ -4735,7 +4746,7 @@ textarea {
   aspect-ratio: 375 / 812;
   overflow: hidden;
   background-color: #eadbd4;
-  background-image: url("素材/figma-base/hall-background.png");
+  background-image: var(--tone-tarot-guide, url("素材/figma-base/hall-background.png"));
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;

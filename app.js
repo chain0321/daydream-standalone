@@ -2096,7 +2096,8 @@
       var newGuides = await window.TarotAI.generateAdditionalGuides(
         state.worldSeed, state.worldState, state.interactionLog,
         existingHints, existingQuests,
-        state.material || state.base
+        state.material || state.base,
+        state.tone
       );
       if (newGuides && ((newGuides.hints && newGuides.hints.length) || (newGuides.quests && newGuides.quests.length))) {
         var updatedHints = existingHints.concat(newGuides.hints || []);
