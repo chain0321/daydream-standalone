@@ -551,7 +551,19 @@ textarea {
 .material-inline-flip {
   overflow: visible;
   perspective: 900px;
-  animation: material-inline-turn .56s cubic-bezier(.3, .72, .24, 1) both;
+  animation: material-inline-turn .86s cubic-bezier(.28, .7, .22, 1) both;
+}
+
+.material-inline-flip::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  border: 1px solid rgba(157, 24, 20, .7);
+  background: rgba(142, 42, 32, .3);
+  mix-blend-mode: multiply;
+  animation: material-inline-color-shift .86s ease-in-out both;
 }
 
 .material-inline-back {
@@ -616,8 +628,16 @@ textarea {
 }
 
 @keyframes material-inline-turn {
-  0% { opacity: .6; transform: translateY(-3px) scale(1.015) rotateY(88deg); }
+  0% { opacity: .72; transform: translateY(-3px) scale(1.015) rotateY(88deg); }
+  42% { opacity: .9; transform: translateY(-3px) scale(1.015) rotateY(42deg); }
   100% { opacity: 1; transform: translateY(-3px) scale(1.015) rotateY(0deg); }
+}
+
+@keyframes material-inline-color-shift {
+  0% { opacity: .72; }
+  42% { opacity: .48; }
+  70% { opacity: .16; }
+  100% { opacity: 0; }
 }
 
 .material-flip-overlay {
