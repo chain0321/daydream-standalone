@@ -541,14 +541,24 @@
       '</button>';
     }
     return onboardingShell(
-      '<div class="step-heading compact center">' +
-        '<span class="eyebrow">06 · 二级联想</span>' +
-        '<div class="expression-quote">"' + esc(state.userExpression) + '"</div>' +
-        '<h1>哪一个词，更接近你想<br>继续探索的方向？</h1>' +
-        '<p>这些词只向外打开方向，不替你解释原来的表达。</p>' +
-      '</div>' +
-      '<div class="word-orbit" role="list">' + words + '</div>',
-      { wide: true }
+      '<div class="secondary-ritual-screen">' +
+        '<div class="secondary-theme-core" aria-label="世界母题：' + esc(state.selectedPrimaryTheme) + '">' +
+          '<span>世界母题</span>' +
+          '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
+        '</div>' +
+        '<div class="word-orbit" role="list">' + words + '</div>' +
+        '<div class="secondary-ritual-copy">' +
+          '<span class="eyebrow">06 · 二级联想</span>' +
+          '<div class="expression-quote">"' + esc(state.userExpression) + '"</div>' +
+          '<h1>哪一个词，更接近你想继续探索的方向？</h1>' +
+          '<p>这些词只向外打开方向，不替你解释原来的表达。</p>' +
+        '</div>' +
+      '</div>',
+      {
+        wide: true,
+        contentClass: "ritual-continuity-content",
+        shellClass: "ritual-continuity-page secondary-ritual-page"
+      }
     );
   }
 
@@ -1116,17 +1126,23 @@
 
       /* ---- build DOM ---- */
       app.innerHTML = onboardingShell(
-        '<div class="morse-meditation">' +
-          '<p class="morse-title">向世界发送调谐信号</p>' +
-          '<p class="morse-sub" id="mosub">轻触 = <b>·</b> &nbsp; 长按 = <b>−</b></p>' +
-          '<div class="morse-stage" id="most">' +
-            '<div class="morse-target" id="motgt"></div>' +
-            '<div class="morse-ripples" id="morip"></div>' +
+        '<div class="morse-ritual-screen">' +
+          '<div class="morse-meditation">' +
+            '<p class="morse-title">向世界发送调谐信号</p>' +
+            '<p class="morse-sub" id="mosub">轻触 = <b>·</b> &nbsp; 长按 = <b>−</b></p>' +
+            '<div class="morse-stage" id="most">' +
+              '<div class="morse-target" id="motgt"></div>' +
+              '<div class="morse-ripples" id="morip"></div>' +
+            '</div>' +
+            '<p class="morse-tally" id="motal">尚未校准</p>' +
+            '<p class="morse-ai" id="moai"></p>' +
           '</div>' +
-          '<p class="morse-tally" id="motal">尚未校准</p>' +
-          '<p class="morse-ai" id="moai"></p>' +
         '</div>',
-        { wide: true }
+        {
+          wide: true,
+          contentClass: "ritual-continuity-content",
+          shellClass: "ritual-continuity-page morse-ritual-page"
+        }
       );
 
       var stage = document.getElementById("most");

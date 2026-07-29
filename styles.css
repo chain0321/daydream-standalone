@@ -2285,6 +2285,324 @@ textarea {
   min-height: 16px;
 }
 
+/* ====== Continuous ritual canvas: Morse → direction words ====== */
+.onboarding.ritual-continuity-page::before {
+  background: none;
+  filter: none;
+}
+
+.ritual-continuity-page .ink-figure {
+  display: none;
+}
+
+.ritual-continuity-page .onboarding-header,
+.ritual-continuity-page .progress {
+  z-index: 4;
+}
+
+.ritual-continuity-page .onboarding-header {
+  background: transparent;
+}
+
+.ritual-continuity-page .restore-note {
+  display: none;
+}
+
+.onboarding-content.ritual-continuity-content {
+  position: relative;
+  top: calc(-67px - env(safe-area-inset-top));
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.morse-ritual-screen,
+.secondary-ritual-screen {
+  position: relative;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 375 / 814;
+  overflow: hidden;
+  background-color: #eadbd4;
+  background-image: url("素材/figma-expression/wizard-background.png");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+.morse-ritual-screen::after,
+.secondary-ritual-screen::after {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  content: "";
+  background: linear-gradient(
+    180deg,
+    rgba(245, 235, 230, .02) 0%,
+    rgba(245, 235, 230, .08) 31%,
+    rgba(245, 235, 230, .2) 68%,
+    rgba(245, 235, 230, .32) 100%
+  );
+  pointer-events: none;
+}
+
+/* Morse keeps a generous invisible touch target; the visible core is the
+   same 30.67% disc used by the expression and keyword screens. */
+.morse-ritual-page .morse-meditation {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  height: auto;
+  display: block;
+}
+
+.morse-ritual-page .morse-title {
+  position: absolute;
+  top: 33.6%;
+  right: 8%;
+  left: 8%;
+  margin: 0;
+  font-size: clamp(16px, 4.8vw, 20px);
+}
+
+.morse-ritual-page .morse-sub {
+  position: absolute;
+  top: 37.5%;
+  right: 8%;
+  left: 8%;
+  margin: 0;
+  font-size: clamp(9px, 2.8vw, 12px);
+}
+
+.morse-ritual-page .morse-stage {
+  position: absolute;
+  top: 35.6%;
+  left: 50%;
+  width: 58.67%;
+  height: auto;
+  aspect-ratio: 1;
+  margin: 0;
+  transform: translateX(-50%);
+  border: 0;
+  background: transparent;
+}
+
+.morse-ritual-page .morse-stage::before {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 52.27%;
+  aspect-ratio: 1;
+  content: "";
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(157, 24, 20, .42);
+  border-radius: 50%;
+  background: rgba(246, 236, 231, .78);
+  box-shadow:
+    inset 0 0 0 7px rgba(246, 236, 231, .72),
+    inset 0 0 0 8px rgba(157, 24, 20, .14),
+    0 0 24px rgba(246, 236, 231, .45);
+  transition: border-color .25s ease, background .25s ease, transform .18s ease;
+}
+
+.morse-ritual-page .morse-stage::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: 84%;
+  aspect-ratio: 1;
+  content: "";
+  transform: translate(-50%, -50%);
+  border: 1px solid rgba(157, 24, 20, .14);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 22px rgba(246, 236, 231, .04);
+  pointer-events: none;
+}
+
+.morse-ritual-page .morse-stage.pressing {
+  background: transparent;
+}
+
+.morse-ritual-page .morse-stage.pressing::before {
+  transform: translate(-50%, -50%) scale(.96);
+  border-color: rgba(157, 24, 20, .62);
+  background: rgba(249, 239, 234, .9);
+}
+
+.morse-ritual-page .morse-target {
+  position: relative;
+  z-index: 2;
+  gap: 1px;
+}
+
+.morse-ritual-page .ms-sym {
+  width: clamp(14px, 3.8vw, 17px);
+  height: clamp(24px, 6.4vw, 28px);
+  font-size: clamp(17px, 4.8vw, 21px);
+}
+
+.morse-ritual-page .morse-tally {
+  position: absolute;
+  top: 59.1%;
+  right: 7%;
+  left: 7%;
+  margin: 0;
+  font-size: clamp(9px, 2.7vw, 12px);
+}
+
+.morse-ritual-page .morse-ai {
+  position: absolute;
+  top: 62.2%;
+  right: 7%;
+  left: 7%;
+  margin: 0;
+}
+
+/* The central motif is identical to the previous screen; only the five
+   generated directions grow outward around it. */
+.secondary-theme-core {
+  position: absolute;
+  top: 42.05%;
+  left: 50%;
+  z-index: 3;
+  width: 30.67%;
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transform: translateX(-50%);
+  border: 1px solid rgba(157, 24, 20, .42);
+  border-radius: 50%;
+  background: rgba(246, 236, 231, .82);
+  box-shadow: 0 0 24px rgba(246, 236, 231, .42);
+}
+
+.secondary-theme-core::after {
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(157, 24, 20, .16);
+  border-radius: 50%;
+  content: "";
+}
+
+.secondary-theme-core span,
+.secondary-theme-core strong {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.secondary-theme-core span {
+  color: rgba(75, 58, 51, .66);
+  font-size: clamp(8px, 2.3vw, 10px);
+  letter-spacing: .1em;
+  text-indent: .1em;
+}
+
+.secondary-theme-core strong {
+  margin-top: 6px;
+  color: var(--red);
+  font-family: var(--serif);
+  font-size: clamp(25px, 7.6vw, 33px);
+  font-weight: 500;
+  letter-spacing: .12em;
+  line-height: 1;
+  text-indent: .12em;
+}
+
+.secondary-ritual-page .word-orbit {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  width: auto;
+  height: auto;
+  margin: 0;
+}
+
+.secondary-ritual-page .word-orbit::before {
+  top: 33.75%;
+  left: 16.67%;
+  width: 66.67%;
+  height: auto;
+  aspect-ratio: 1;
+  border-color: rgba(157, 24, 20, .18);
+}
+
+.secondary-ritual-page .word-orbit::after {
+  top: 38.96%;
+  left: 28%;
+  width: 44%;
+  height: auto;
+  aspect-ratio: 1;
+  border-color: rgba(157, 24, 20, .11);
+}
+
+.secondary-ritual-page .word-choice {
+  width: 20.27%;
+  height: auto;
+  aspect-ratio: 1;
+  border-color: rgba(49, 35, 31, .24);
+  background: rgba(246, 237, 232, .94);
+  box-shadow: 0 3px 12px rgba(61, 38, 30, .08);
+}
+
+.secondary-ritual-page .word-choice span {
+  font-size: clamp(12px, 3.7vw, 16px);
+}
+
+.secondary-ritual-page .word-choice small {
+  margin-top: 4px;
+}
+
+.secondary-ritual-page .word-1 { top: 30.35%; left: 39.87%; }
+.secondary-ritual-page .word-2 { top: 41%; left: 8.8%; }
+.secondary-ritual-page .word-3 { top: 41%; right: 8.8%; }
+.secondary-ritual-page .word-4 { top: 57.15%; left: 21.5%; }
+.secondary-ritual-page .word-5 { top: 57.15%; right: 21.5%; }
+
+.secondary-ritual-copy {
+  position: absolute;
+  top: 69.2%;
+  right: 8%;
+  left: 8%;
+  z-index: 2;
+  text-align: center;
+}
+
+.secondary-ritual-copy .eyebrow {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.secondary-ritual-copy .expression-quote {
+  max-width: 290px;
+  margin-bottom: 10px;
+  padding: 7px 14px;
+  font-size: 10px;
+}
+
+.secondary-ritual-copy h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: clamp(18px, 5vw, 22px);
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.secondary-ritual-copy p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-family: var(--serif);
+  font-size: clamp(9px, 2.5vw, 11px);
+  line-height: 1.55;
+}
+
 /* ====== World Workspace ====== */
 .world-workspace::before {
   opacity: .16;
