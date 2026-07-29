@@ -54,6 +54,12 @@
     fantasy: { name: "幻想世界", mark: "幻", description: "誓言与异象共同生长", hints: ["魔法", "传说", "法则"] },
     psyche: { name: "心灵世界", mark: "心", description: "内在感受化为真实空间", hints: ["梦境", "回声", "象征"] }
   };
+  const BASE_TAROT_ART = {
+    reality: "素材/figma-tarot/reality-card.png",
+    scifi: "素材/figma-tarot/scifi-card.png",
+    fantasy: "素材/figma-tarot/fantasy-card.png",
+    psyche: "素材/figma-tarot/psyche-card.png"
+  };
   const PRIMARY_SPREADS = {
     reality: {
       name: "因果牌阵",
@@ -444,6 +450,7 @@
 
   function renderPrimary() {
     var spread = state.domain === "fiction" ? PRIMARY_SPREADS[state.base] : null;
+    var tarotArt = spread ? BASE_TAROT_ART[state.base] : "";
     var cards = "";
     for (var i = 0; i < state.primaryThemes.length; i++) {
       var theme = state.primaryThemes[i];
@@ -454,9 +461,13 @@
           ' data-position-meaning="' + esc(position.meaning) + '"'
         : "";
       var ariaLabel = "选择母题" + theme.name;
-      cards += '<button class="theme-card card-' + (i + 1) + '" role="listitem" ' +
+      var artHtml = tarotArt
+        ? '<img class="theme-card-art" src="' + tarotArt + '" alt="" aria-hidden="true">'
+        : "";
+      cards += '<button class="theme-card card-' + (i + 1) + (tarotArt ? ' has-figma-art' : '') + '" role="listitem" ' +
         'data-action="choose-primary" data-id="' + theme.id + '" data-name="' + esc(theme.name) + '"' +
         positionAttrs + ' aria-label="' + esc(ariaLabel) + '">' +
+        artHtml +
         '<span class="card-veil"></span>' +
         '<span class="theme-index">0' + (i + 1) + '</span>' +
         '<strong>' + esc(theme.name) + '</strong>' +
