@@ -1131,21 +1131,17 @@ textarea {
   min-height: 0;
   aspect-ratio: 290 / 117;
   overflow: hidden;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid rgba(58, 40, 34, .2);
+  background: rgba(247, 238, 233, .34);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, .025);
 }
 
 .expression-textarea::before {
-  display: none;
-}
-
-.expression-textbox-art {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+  inset: 4px;
+  display: block;
+  border: 1px solid rgba(157, 24, 20, .14);
+  content: "";
   pointer-events: none;
 }
 
