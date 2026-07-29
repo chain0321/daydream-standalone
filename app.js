@@ -396,24 +396,31 @@
 
   function renderDomain() {
     return onboardingShell(
-      '<div class="step-heading">' +
-        '<span class="eyebrow">02 · 选择进入方式</span>' +
-        '<h1>这个世界，<br>从哪里来？</h1>' +
-        '<p>决定了世界种子的材料来源——进入人类已有的叙事世界，还是从空白中创造。</p>' +
-      '</div>' +
-      '<div class="tone-choices">' +
-        '<button class="tone-card" data-action="choose-domain" data-value="archaeology">' +
-          '<span class="tone-sigil">⌂</span>' +
-          '<span class="tone-copy"><strong>现存</strong><small>历史 · 神话 · 文学 · 人物 · 现场 · 悬疑 · 二次元 · 武侠</small></span>' +
-          '<span class="choice-arrow">→</span>' +
+      '<div class="domain-portals" role="group" aria-label="选择进入世界的方式">' +
+        '<button class="domain-portal domain-existing" data-action="choose-domain" data-value="archaeology">' +
+          '<span class="domain-portal-art">' +
+            '<img src="素材/domain-existing-transparent.png" alt="" aria-hidden="true">' +
+          '</span>' +
+          '<span class="domain-portal-copy">' +
+            '<strong>现存</strong>' +
+            '<small>你有一双藏在历史中的眼睛——通过交互，逐渐发现自己是谁。</small>' +
+          '</span>' +
         '</button>' +
-        '<button class="tone-card dark" data-action="choose-domain" data-value="fiction">' +
-          '<span class="tone-sigil">✦</span>' +
-          '<span class="tone-copy"><strong>虚构</strong><small>现实 · 科幻 · 幻想 · 心灵</small></span>' +
-          '<span class="choice-arrow">→</span>' +
+        '<button class="domain-portal domain-fiction" data-action="choose-domain" data-value="fiction">' +
+          '<span class="domain-portal-art">' +
+            '<img src="素材/domain-fiction-transparent.png" alt="" aria-hidden="true">' +
+          '</span>' +
+          '<span class="domain-portal-copy">' +
+            '<strong>虚构</strong>' +
+            '<small>一切从零开始——你将写下这个世界的第一条记录。</small>' +
+          '</span>' +
         '</button>' +
-      '</div>' +
-      '<p class="whisper">现存的世界，你有一双藏在历史中的眼睛——通过交互，你会逐渐发现自己是谁。<br>虚构的世界，一切从零开始——你写下它的第一条记录。</p>'
+      '</div>',
+      {
+        wide: true,
+        contentClass: "domain-portal-content",
+        shellClass: "domain-portal-page"
+      }
     );
   }
 
@@ -2664,7 +2671,23 @@
     } else if (action === "choose-tone") {
       setState({ tone: target.dataset.value, phase: "domain", restored: false });
     } else if (action === "choose-domain") {
-      setState({ domain: target.dataset.value, selectedMaterialPreview: "", materialFlipOpen: false, phase: "base" });
+      var portalList = target.closest(".domain-portals");
+      if (!portalList || portalList.classList.contains("has-selection")) return;
+      portalList.classList.add("has-selection");
+      target.classList.add("is-selected");
+      var portalButtons = portalList.querySelectorAll(".domain-portal");
+      for (var portalIndex = 0; portalIndex < portalButtons.length; portalIndex++) {
+        portalButtons[portalIndex].disabled = true;
+      }
+      var selectedDomain = target.dataset.value;
+      setTimeout(function () {
+        setState({
+          domain: selectedDomain,
+          selectedMaterialPreview: "",
+          materialFlipOpen: false,
+          phase: "base"
+        });
+      }, 320);
     } else if (action === "preview-material") {
       var previewMaterial = target.dataset.value;
       state = Object.assign({}, state, { material: previewMaterial });
