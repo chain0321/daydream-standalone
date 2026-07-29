@@ -511,7 +511,6 @@
         '<p class="expression-prompt">不需要完整，也不必像一个标准问题。</p>' +
         '<form class="ritual-form expression-ritual-form" data-form="expression">' +
           '<div class="ornate-textarea expression-textarea">' +
-            '<img class="expression-textbox-art" src="素材/figma-expression/text-box.png" alt="" aria-hidden="true">' +
           '<textarea id="expression-input" maxlength="280" required ' +
             'placeholder="写下一个问题、想法或感受……" ' +
             'aria-label="写下一个问题、想法或感受">' + esc(state.userExpression) + '</textarea>' +

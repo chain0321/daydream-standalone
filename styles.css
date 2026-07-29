@@ -1126,26 +1126,26 @@ textarea {
 .expression-textarea {
   position: absolute;
   top: 68.55%;
-  left: 11.47%;
-  width: 77.33%;
+  left: 6.36%;
+  width: 87.27%;
   min-height: 0;
-  aspect-ratio: 290 / 117;
+  aspect-ratio: 32 / 11;
   overflow: hidden;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
+  border: 1px solid rgba(58, 40, 34, .2);
+  background: linear-gradient(
+    180deg,
+    rgba(247, 238, 233, .4),
+    rgba(239, 226, 219, .5)
+  );
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, .04);
 }
 
 .expression-textarea::before {
-  display: none;
-}
-
-.expression-textbox-art {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: fill;
+  inset: 3px;
+  display: block;
+  border: 1px solid rgba(157, 24, 20, .12);
+  content: "";
   pointer-events: none;
 }
 
@@ -1155,7 +1155,7 @@ textarea {
   z-index: 1;
   width: 100%;
   height: 100%;
-  padding: 18px 20px;
+  padding: clamp(21px, 6.1vw, 27px) clamp(23px, 6.6vw, 29px);
   border: 0;
   outline: 0;
   color: #312825;
@@ -1167,8 +1167,8 @@ textarea {
 
 .expression-figma-page .char-count {
   position: absolute;
-  top: 81.62%;
-  right: 12%;
+  top: 82.55%;
+  right: 7.5%;
   margin: 0;
   color: rgba(33, 33, 32, .54);
   font-size: 9px;
@@ -1177,7 +1177,7 @@ textarea {
 
 .expression-submit {
   position: absolute;
-  top: 82.92%;
+  top: 86.5%;
   left: 50%;
   width: 17.33%;
   min-width: 0;
