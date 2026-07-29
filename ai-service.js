@@ -593,6 +593,12 @@
       isArchaeology
         ? "用户选择的主题维度（一级母题）：" + params.primaryTheme
         : "一级母题：" + params.primaryTheme,
+      !isArchaeology && params.primaryPosition && params.primaryPosition.label
+        ? "一级母题牌位：" + params.primaryPosition.label
+        : "",
+      !isArchaeology && params.primaryPosition && params.primaryPosition.meaning
+        ? "牌位语义：" + params.primaryPosition.meaning
+        : "",
       "用户表达：" + params.userExpression,
       isArchaeology
         ? "（注意：以上维度词 + 用户表达，请从中提取主题方向，生成5个主题关联词——而非因果推导词）"
@@ -830,6 +836,9 @@
       "",
       "硬性要求：",
       "- 异常必须与母题存在隐性联系，但不要点明。",
+      !isArchaeology && params.primaryPosition && params.primaryPosition.label
+        ? "- 将牌位「" + params.primaryPosition.label + "」视为一级母题进入世界的叙事身份。牌位不是装饰词，生成的情境必须体现其作用，但不要直接复述牌位名称。"
+        : "",
       "- 不列规则、不写完整设定、不解释含义。",
       "- 人物、原因、世界法则全部留空。",
       "- 不要过度发明专有概念名词。世界种子的吸引力来自情境和异常，而非生造术语。每段最多出现 1—2 个具名的设定概念，其余用日常语言描述。",
@@ -875,9 +884,15 @@
       "展开气质：" + toneLabel,
       (isArchaeology ? "领域与矿脉：" : "世界基底：") + domainLabel,
       "一级母题：" + params.primaryTheme,
+      !isArchaeology && params.primaryPosition && params.primaryPosition.label
+        ? "一级母题牌位：" + params.primaryPosition.label
+        : "",
+      !isArchaeology && params.primaryPosition && params.primaryPosition.meaning
+        ? "牌位语义：" + params.primaryPosition.meaning
+        : "",
       "二级联想词：" + params.secondaryTheme,
       "用户表达：" + params.userExpression
-    ].join("\n");
+    ].filter(Boolean).join("\n");
 
     try {
       var text = await callAI(systemPrompt, userPrompt, { temperature: 0.88, maxTokens: 4096, onChunk: onChunk, responseFormat: "json_object" });

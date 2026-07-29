@@ -14,6 +14,7 @@
     primaryThemes: [],
     selectedPrimaryTheme: "",
     selectedPrimaryThemeId: "",
+    selectedSpreadPosition: { key: "", label: "", meaning: "" },
     themeRefreshUsed: false,
     userExpression: "",
     secondaryThemes: [],
@@ -52,6 +53,56 @@
     scifi: { name: "科幻世界", mark: "寂", description: "技术边界之外的未知", hints: ["星际", "机械", "意识"] },
     fantasy: { name: "幻想世界", mark: "幻", description: "誓言与异象共同生长", hints: ["魔法", "传说", "法则"] },
     psyche: { name: "心灵世界", mark: "心", description: "内在感受化为真实空间", hints: ["梦境", "回声", "象征"] }
+  };
+  const PRIMARY_SPREADS = {
+    reality: {
+      name: "因果牌阵",
+      layout: "timeline",
+      question: "事情如何发生，又将造成什么后果？",
+      positions: [
+        { key: "established-fact", label: "既成事实", meaning: "已经发生、无法被忽略的现实条件" },
+        { key: "origin", label: "事件起因", meaning: "推动当前局面的直接成因" },
+        { key: "conflict", label: "当前矛盾", meaning: "此刻最需要面对的现实冲突" },
+        { key: "choice", label: "主动选择", meaning: "人物能够真正采取的行动方向" },
+        { key: "consequence", label: "现实后果", meaning: "沿着当前选择继续发展时可能出现的结果" }
+      ]
+    },
+    scifi: {
+      name: "系统罗盘阵",
+      layout: "system",
+      question: "哪些系统、变量与异常正在共同运转？",
+      positions: [
+        { key: "system-core", label: "系统核心", meaning: "维持整个世界运行的核心机制" },
+        { key: "control-protocol", label: "控制协议", meaning: "试图规范、限制或引导系统的显性规则" },
+        { key: "hidden-variable", label: "黑箱变量", meaning: "系统无法解释，却持续改变结果的隐藏因素" },
+        { key: "external-input", label: "外部输入", meaning: "来自人类、环境或未知来源的干预" },
+        { key: "emergent-result", label: "演化结果", meaning: "多个变量共同作用后正在形成的新状态" }
+      ]
+    },
+    fantasy: {
+      name: "命运五芒阵",
+      layout: "pentagram",
+      question: "谁在召唤你，你将经历怎样的命运？",
+      positions: [
+        { key: "calling", label: "命运召唤", meaning: "迫使人物踏入故事的召唤或征兆" },
+        { key: "gift", label: "神赐之物", meaning: "被给予、继承或意外获得的力量与凭证" },
+        { key: "guardian", label: "守护者", meaning: "保护、引导或考验人物的存在" },
+        { key: "trial", label: "试炼诅咒", meaning: "必须付出代价才能穿越的阻碍" },
+        { key: "destiny", label: "最终命运", meaning: "所有誓言与选择正在指向的终点" }
+      ]
+    },
+    psyche: {
+      name: "内在镜像阵",
+      layout: "mirror",
+      question: "你看见的自己，与隐藏的自己有何冲突？",
+      positions: [
+        { key: "persona", label: "表层自我", meaning: "自己愿意承认并展示给世界的那一面" },
+        { key: "deep-memory", label: "深层记忆", meaning: "被时间覆盖，却仍影响当下的经验" },
+        { key: "hidden-desire", label: "隐秘渴望", meaning: "尚未被自己清楚承认的需要" },
+        { key: "shadow", label: "阴影自我", meaning: "被压抑、拒绝或投射出去的那部分自己" },
+        { key: "integration", label: "最终整合", meaning: "冲突的内在部分可能共同形成的新自我" }
+      ]
+    }
   };
   const VIEWS = {
     story: { name: "羽毛书", icon: "⌁" },
@@ -392,12 +443,20 @@
   }
 
   function renderPrimary() {
+    var spread = state.domain === "fiction" ? PRIMARY_SPREADS[state.base] : null;
     var cards = "";
     for (var i = 0; i < state.primaryThemes.length; i++) {
       var theme = state.primaryThemes[i];
+      var position = spread ? spread.positions[i] : null;
+      var positionAttrs = position
+        ? ' data-position-key="' + esc(position.key) + '"' +
+          ' data-position-label="' + esc(position.label) + '"' +
+          ' data-position-meaning="' + esc(position.meaning) + '"'
+        : "";
+      var ariaLabel = "选择母题" + theme.name;
       cards += '<button class="theme-card card-' + (i + 1) + '" role="listitem" ' +
-        'data-action="choose-primary" data-id="' + theme.id + '" data-name="' + esc(theme.name) + '" ' +
-        'aria-label="选择母题' + esc(theme.name) + '">' +
+        'data-action="choose-primary" data-id="' + theme.id + '" data-name="' + esc(theme.name) + '"' +
+        positionAttrs + ' aria-label="' + esc(ariaLabel) + '">' +
         '<span class="card-veil"></span>' +
         '<span class="theme-index">0' + (i + 1) + '</span>' +
         '<strong>' + esc(theme.name) + '</strong>' +
@@ -405,12 +464,15 @@
     }
     var toneLabel = state.tone === "light" ? "光明" : "黑暗";
     var domainHint = state.domain === "archaeology" && state.material ? "现存·" + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
+    var spreadName = spread ? spread.name : "抽取一级母题";
+    var spreadQuestion = spread ? spread.question : "五张牌，哪一张先叫住了你？";
+    var layoutClass = spread ? " spread-" + spread.layout : " spread-archive";
     return onboardingShell(
       '<div class="tarot-draw-screen">' +
       '<div class="tarot-draw-heading">' +
-        '<span class="eyebrow">04 · 抽取一级母题</span>' +
+        '<span class="eyebrow">04 · ' + esc(spreadName) + '</span>' +
         '<h1>五张牌，哪一张<br>先叫住了你？</h1>' +
-        '<p>' + toneLabel + ' · ' + esc(domainHint) + ' 已改变了牌阵的概率。</p>' +
+        '<p>' + esc(spreadQuestion) + '<br>' + toneLabel + ' · ' + esc(domainHint) + ' 已改变了牌阵的概率。</p>' +
       '</div>' +
       '<div class="tarot-spread tarot-draw-spread" role="list" aria-label="本轮五个一级母题">' + cards + '</div>' +
       '<div class="spread-actions tarot-draw-actions">' +
@@ -423,7 +485,7 @@
       {
         wide: true,
         contentClass: "tarot-draw-content",
-        shellClass: "tarot-draw-page"
+        shellClass: "tarot-draw-page" + layoutClass
       }
     );
   }
@@ -507,7 +569,6 @@
     }
 
     var domainLabel = state.domain === "archaeology" && state.material ? "现存·" + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
-
     return onboardingShell(
       '<div class="step-heading compact center seed-heading">' +
         '<span class="eyebrow">07 · 世界种子' + (total > 0 ? ' · 第 ' + (idx + 1) + ' 颗' : '') + '</span>' +
@@ -1811,6 +1872,7 @@
       material: state.material,
       base: state.base,
       primaryTheme: state.selectedPrimaryTheme,
+      primaryPosition: state.selectedSpreadPosition,
       secondaryTheme: value,
       userExpression: state.userExpression,
       rejectedWorlds: state.worldSeeds,
@@ -1874,6 +1936,7 @@
       tone: state.tone,
       primaryTheme: state.selectedPrimaryTheme,
       primaryThemeId: state.selectedPrimaryThemeId,
+      primaryPosition: state.selectedSpreadPosition,
       userExpression: state.userExpression,
       previousSeeds: state.worldSeeds.map(function (s) {
         return { secondaryTheme: s.secondaryTheme, title: s.title };
@@ -2174,6 +2237,7 @@
       reset.primaryThemes = [];
       reset.selectedPrimaryTheme = "";
       reset.selectedPrimaryThemeId = "";
+      reset.selectedSpreadPosition = clone(DEFAULT_STATE.selectedSpreadPosition);
     }
     if (previous === "base") {
       reset.material = "";
@@ -2181,10 +2245,12 @@
       reset.primaryThemes = [];
       reset.selectedPrimaryTheme = "";
       reset.selectedPrimaryThemeId = "";
+      reset.selectedSpreadPosition = clone(DEFAULT_STATE.selectedSpreadPosition);
     }
     if (previous === "primary") {
       reset.selectedPrimaryTheme = "";
       reset.selectedPrimaryThemeId = "";
+      reset.selectedSpreadPosition = clone(DEFAULT_STATE.selectedSpreadPosition);
       reset.userExpression = "";
       reset.secondaryThemes = [];
     }
@@ -2228,6 +2294,7 @@
       base: state.base,
       playerIdentity: state.playerIdentity,
       primaryTheme: state.selectedPrimaryTheme,
+      primaryPosition: state.selectedSpreadPosition,
       secondaryTheme: state.selectedSecondaryTheme,
       userExpression: state.userExpression,
       worldState: state.worldState,
@@ -2301,6 +2368,7 @@
       base: archive.base || "",
       playerIdentity: archive.playerIdentity || null,
       selectedPrimaryTheme: archive.primaryTheme,
+      selectedSpreadPosition: archive.primaryPosition || clone(DEFAULT_STATE.selectedSpreadPosition),
       selectedSecondaryTheme: archive.secondaryTheme,
       userExpression: archive.userExpression,
       worldSeed: { title: archive.title, body: archive.body, bodyExpanded: archive.bodyExpanded, hints: archive.hints || [], quests: archive.quests || [] },
@@ -2435,15 +2503,29 @@
     } else if (action === "choose-material") {
       var material = target.dataset.value;
       state = Object.assign({}, state, { material: material });
-      setState({ material: material, primaryThemes: drawThemes(), phase: "primary" });
+      setState({
+        material: material,
+        primaryThemes: drawThemes(),
+        selectedSpreadPosition: clone(DEFAULT_STATE.selectedSpreadPosition),
+        phase: "primary"
+      });
     } else if (action === "choose-base") {
       var base = target.dataset.value;
       state = Object.assign({}, state, { base: base });
-      setState({ primaryThemes: drawThemes(), phase: "primary" });
+      setState({
+        primaryThemes: drawThemes(),
+        selectedSpreadPosition: clone(DEFAULT_STATE.selectedSpreadPosition),
+        phase: "primary"
+      });
     } else if (action === "choose-primary") {
       setState({
         selectedPrimaryTheme: target.dataset.name,
         selectedPrimaryThemeId: target.dataset.id,
+        selectedSpreadPosition: {
+          key: target.dataset.positionKey || "",
+          label: target.dataset.positionLabel || "",
+          meaning: target.dataset.positionMeaning || ""
+        },
         phase: "expression"
       });
     } else if (action === "refresh-themes" && !state.themeRefreshUsed) {
@@ -2571,6 +2653,7 @@
         tone: state.tone,
         primaryTheme: state.selectedPrimaryTheme,
         primaryThemeId: state.selectedPrimaryThemeId,
+        primaryPosition: state.selectedSpreadPosition,
         userExpression: input
       });
       try {
