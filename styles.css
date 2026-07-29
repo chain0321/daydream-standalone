@@ -1588,7 +1588,7 @@ textarea {
   aspect-ratio: 375 / 812;
   overflow: hidden;
   background-color: #eadbd4;
-  background-image: url("素材/figma-base/hall-background.png");
+  background-image: var(--tone-tarot-guide, url("素材/figma-base/hall-background.png"));
   background-position: center;
   background-repeat: no-repeat;
   background-size: 100% 100%;
