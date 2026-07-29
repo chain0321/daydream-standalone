@@ -315,6 +315,7 @@
 
   function renderTone() {
     var archives = loadArchives();
+    var tone = state.tone === "dark" ? "dark" : "light";
     var archivesHtml = "";
     if (archives.length > 0) {
       var cards = "";
@@ -335,32 +336,62 @@
           '<button class="aw-delete-btn" data-action="delete-archive" data-id="' + a.id + '">删除</button>' +
         '</div>';
       }
-      archivesHtml = '<section class="archived-worlds">' +
-        '<div class="aw-divider"><span>存档的世界</span></div>' +
-        cards +
-      '</section>';
+      archivesHtml = '<div class="home-archive-list">' + cards + '</div>';
+    } else {
+      archivesHtml = '<div class="home-archive-empty">' +
+        '<span>✦</span>' +
+        '<strong>尚未留下世界</strong>' +
+        '<p>完成一次白日幻想后，它会被写在这里。</p>' +
+      '</div>';
     }
-    return onboardingShell(
-      '<div class="step-heading">' +
-        '<span class="eyebrow">01 · 选择展开气质</span>' +
-        '<h1>你愿意从哪一面<br>靠近这个世界？</h1>' +
-        '<p>这不是善恶判断，只决定世界种子如何回应你的问题。</p>' +
+    return '<section class="dream-home is-' + tone + '" data-home-tone="' + tone + '">' +
+      '<div class="home-hero" aria-hidden="true">' +
+        '<img class="home-wizard home-wizard-light" src="素材/竖版背景（光明）.png" alt="">' +
+        '<img class="home-wizard home-wizard-dark" src="素材/figma-expression/wizard-background.png" alt="">' +
+        '<span class="home-paper-grade"></span>' +
       '</div>' +
-      '<div class="tone-choices">' +
-        '<button class="tone-card light" data-action="choose-tone" data-value="light">' +
-          '<span class="tone-sigil">☼</span>' +
-          '<span class="tone-copy"><strong>光明</strong><small>可能性 · 修复 · 重新选择</small></span>' +
-          '<span class="choice-arrow">→</span>' +
+      '<div class="home-tone-picker" aria-label="选择世界气质">' +
+        '<span class="home-tone-label home-tone-light"><strong>光明</strong><small>可能性 · 修复</small></span>' +
+        '<button class="home-tone-switch" data-action="toggle-home-tone" type="button" ' +
+          'aria-label="切换光明与黑暗" aria-pressed="' + (tone === "dark" ? "true" : "false") + '">' +
+          '<span class="home-tone-track" aria-hidden="true">' +
+            '<img class="home-tone-image home-tone-image-light" src="素材/home-tone-light.png" alt="">' +
+            '<img class="home-tone-image home-tone-image-dark" src="素材/home-tone-dark.png" alt="">' +
+          '</span>' +
         '</button>' +
-        '<button class="tone-card dark" data-action="choose-tone" data-value="dark">' +
-          '<span class="tone-sigil">☾</span>' +
-          '<span class="tone-copy"><strong>黑暗</strong><small>代价 · 禁忌 · 隐藏真相</small></span>' +
-          '<span class="choice-arrow">→</span>' +
+        '<span class="home-tone-label home-tone-dark"><strong>黑暗</strong><small>代价 · 禁忌</small></span>' +
+      '</div>' +
+      '<div class="home-dream-entry" aria-label="入梦动画">' +
+        '<video class="home-dream-video" muted playsinline preload="auto">' +
+          '<source src="素材/开场入梦动画.mp4" type="video/mp4">' +
+        '</video>' +
+        '<button class="home-dream-trigger" data-action="play-dream" type="button" aria-label="播放动画并进入世界">' +
+          '<span class="home-play-triangle" aria-hidden="true"></span>' +
         '</button>' +
       '</div>' +
-      '<p class="whisper">问题不必清晰。世界会从你选择的方向，慢慢显形。</p>' +
-      archivesHtml
-    );
+      '<div class="home-dream-caption" aria-label="白日幻想 Dreaming World">' +
+        '<strong>白 日 幻 想</strong>' +
+        '<span>Dreaming World</span>' +
+      '</div>' +
+      '<button class="home-archive-dock" data-action="toggle-home-archive" type="button" aria-expanded="false">' +
+        '<img class="home-archive-feather" src="素材/按钮羽毛.png" alt="" aria-hidden="true">' +
+        '<span>存档的世界</span>' +
+      '</button>' +
+      '<button class="home-archive-backdrop" data-action="close-home-archive" type="button" aria-label="关闭存档遮罩"></button>' +
+      '<aside class="home-archive-sheet" aria-label="世界的存档">' +
+        '<div class="home-archive-paper" aria-hidden="true"></div>' +
+        '<button class="home-archive-handle" data-action="close-home-archive" type="button" aria-label="收起世界存档">' +
+          '<span></span>' +
+        '</button>' +
+        '<header>' +
+          '<small>WORLD ARCHIVES</small>' +
+          '<h2>世界的存档</h2>' +
+          '<p>羽毛记得你曾经抵达的地方。</p>' +
+        '</header>' +
+        archivesHtml +
+      '</aside>' +
+      '<div class="safe-area" aria-hidden="true"></div>' +
+    '</section>';
   }
 
   function renderDomain() {
@@ -2315,8 +2346,10 @@
     var previous = PHASES[index - 1];
     var reset = { phase: previous };
     if (previous === "tone") {
+      var homeTone = state.tone;
       var def = clone(DEFAULT_STATE);
       def.phase = "tone";
+      def.tone = homeTone;
       reset = def;
     }
     if (previous === "domain") {
@@ -2423,6 +2456,7 @@
     saveArchives(archives);
     var def = clone(DEFAULT_STATE);
     def.phase = "tone";
+    def.tone = state.tone;
     setState(def);
     showToast(existingIdx >= 0 ? "世界存档已更新" : "世界已存档");
   }
@@ -2588,7 +2622,46 @@
     if (!target) return;
     var action = target.dataset.action;
 
-    if (action === "choose-tone") {
+    if (action === "toggle-home-tone") {
+      var nextTone = state.tone === "dark" ? "light" : "dark";
+      state = Object.assign({}, state, { tone: nextTone });
+      persist();
+      var home = document.querySelector(".dream-home");
+      if (home) {
+        home.classList.toggle("is-light", nextTone === "light");
+        home.classList.toggle("is-dark", nextTone === "dark");
+        home.dataset.homeTone = nextTone;
+      }
+      target.setAttribute("aria-pressed", nextTone === "dark" ? "true" : "false");
+    } else if (action === "play-dream") {
+      var dreamEntry = target.closest(".home-dream-entry");
+      if (!dreamEntry || dreamEntry.classList.contains("is-playing")) return;
+      var dreamVideo = dreamEntry.querySelector(".home-dream-video");
+      if (!dreamVideo) return;
+      dreamEntry.classList.add("is-playing");
+      var playingHome = dreamEntry.closest(".dream-home");
+      if (playingHome) playingHome.classList.add("dream-playing");
+      target.setAttribute("aria-label", "入梦动画正在播放");
+      dreamVideo.currentTime = 0;
+      dreamVideo.muted = true;
+      var playPromise = dreamVideo.play();
+      if (playPromise && typeof playPromise.catch === "function") {
+        playPromise.catch(function () {
+          dreamEntry.classList.remove("is-playing");
+          if (playingHome) playingHome.classList.remove("dream-playing");
+          target.setAttribute("aria-label", "播放动画并进入世界");
+          showToast("轻触一次，让梦境开始播放");
+        });
+      }
+    } else if (action === "toggle-home-archive" || action === "close-home-archive") {
+      var dreamHome = document.querySelector(".dream-home");
+      if (dreamHome) {
+        var shouldOpen = action === "toggle-home-archive" && !dreamHome.classList.contains("archive-open");
+        dreamHome.classList.toggle("archive-open", shouldOpen);
+        var archiveDock = dreamHome.querySelector(".home-archive-dock");
+        if (archiveDock) archiveDock.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+      }
+    } else if (action === "choose-tone") {
       setState({ tone: target.dataset.value, phase: "domain", restored: false });
     } else if (action === "choose-domain") {
       setState({ domain: target.dataset.value, selectedMaterialPreview: "", materialFlipOpen: false, phase: "base" });
@@ -2712,8 +2785,10 @@
       }
     } else if (action === "back-to-home") {
       autoSaveArchive();
+      var activeTone = state.tone;
       var def = clone(DEFAULT_STATE);
       def.phase = "tone";
+      def.tone = activeTone;
       setState(def);
     } else if (action === "reset-session") {
       localStorage.removeItem(STORAGE_KEY);
@@ -2739,6 +2814,24 @@
       closeSwipe();
     }
   });
+
+  app.addEventListener("timeupdate", function (event) {
+    var video = event.target;
+    if (!video.classList || !video.classList.contains("home-dream-video")) return;
+    var entry = video.closest(".home-dream-entry");
+    if (!entry || !Number.isFinite(video.duration)) return;
+    if (video.duration - video.currentTime < .7) entry.classList.add("is-ending");
+  }, true);
+
+  app.addEventListener("ended", function (event) {
+    var video = event.target;
+    if (!video.classList || !video.classList.contains("home-dream-video")) return;
+    setState({
+      tone: state.tone === "dark" ? "dark" : "light",
+      phase: "domain",
+      restored: false
+    });
+  }, true);
 
   app.addEventListener("submit", async function (event) {
     event.preventDefault();
