@@ -62,6 +62,7 @@
     fantasy: "素材/figma-tarot/fantasy-card.png",
     psyche: "素材/figma-tarot/psyche-card.png"
   };
+  const LIGHT_TAROT_ART = "素材/figma-tarot/light-card.png";
   const PRIMARY_SPREADS = {
     reality: {
       name: "因果牌阵",
@@ -529,7 +530,9 @@
 
   function renderPrimary() {
     var spread = state.domain === "fiction" ? PRIMARY_SPREADS[state.base] : null;
-    var tarotArt = spread ? BASE_TAROT_ART[state.base] : "";
+    var tarotArt = spread
+      ? (state.tone === "light" ? LIGHT_TAROT_ART : BASE_TAROT_ART[state.base])
+      : "";
     var cards = "";
     for (var i = 0; i < state.primaryThemes.length; i++) {
       var theme = state.primaryThemes[i];

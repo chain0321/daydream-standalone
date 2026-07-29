@@ -1829,6 +1829,25 @@ textarea {
   text-shadow: 0 1px 3px #000, 0 0 10px rgba(0, 0, 0, .95);
 }
 
+.tone-light .theme-card.has-figma-art .card-veil {
+  background: linear-gradient(
+    180deg,
+    rgba(246, 237, 231, 0) 0%,
+    rgba(246, 237, 231, 0) 55%,
+    rgba(239, 222, 213, .76) 100%
+  );
+}
+
+.tone-light .theme-card.has-figma-art .theme-index {
+  color: rgba(94, 49, 42, .78);
+  text-shadow: 0 1px 4px rgba(248, 240, 235, .98);
+}
+
+.tone-light .theme-card.has-figma-art strong {
+  color: #2b211e;
+  text-shadow: 0 1px 3px rgba(249, 241, 236, .98), 0 0 8px rgba(249, 241, 236, .92);
+}
+
 .theme-card:nth-child(1) {
   left: calc(50% - 178px);
   transform: rotate(-15deg) translateY(34px);
