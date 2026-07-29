@@ -232,7 +232,9 @@
     var backButton = stepIndex() > 0
       ? '<button class="icon-button back-button" data-action="back" aria-label="返回上一步">‹</button>'
       : '<span class="header-spacer"></span>';
-    return '<section class="onboarding ' + (state.tone ? "tone-" + state.tone : "") + '">' +
+    return '<section class="onboarding ' +
+      (state.tone ? "tone-" + state.tone : "") +
+      (options.shellClass ? " " + options.shellClass : "") + '">' +
       '<div class="ink-figure" aria-hidden="true"></div>' +
       '<header class="onboarding-header">' +
         backButton +
@@ -375,14 +377,17 @@
     }
     return onboardingShell(
       '<div class="base-portal-screen">' +
-        '<img class="base-portal-background" src="素材/figma-base/hall-background.png" alt="" aria-hidden="true">' +
         '<div class="base-portal-heading">' +
           '<p>旅人，<em>词汇</em>将指引你前往你想去的</p>' +
           '<h1>故事世界</h1>' +
         '</div>' +
         '<div class="base-portal-grid" role="list" aria-label="选择世界基底">' + cards + '</div>' +
       '</div>',
-      { wide: true, contentClass: "base-portal-content" }
+      {
+        wide: true,
+        contentClass: "base-portal-content",
+        shellClass: "base-portal-page"
+      }
     );
   }
 
