@@ -1101,21 +1101,6 @@ textarea {
   pointer-events: none;
 }
 
-.expression-prompt {
-  position: absolute;
-  top: 65.25%;
-  right: 10%;
-  left: 10%;
-  z-index: 2;
-  margin: 0;
-  color: rgba(75, 58, 51, .64);
-  font-family: var(--serif);
-  font-size: clamp(9px, 2.7vw, 11px);
-  letter-spacing: .04em;
-  line-height: 1.4;
-  text-align: center;
-}
-
 .expression-ritual-form {
   position: absolute;
   inset: 0;
@@ -1125,7 +1110,7 @@ textarea {
 
 .expression-textarea {
   position: absolute;
-  top: 68.55%;
+  top: 66.5%;
   left: 6.36%;
   width: 87.27%;
   min-height: 0;
@@ -1134,11 +1119,11 @@ textarea {
   border: 1px solid rgba(157, 24, 20, .28);
   background: linear-gradient(
     180deg,
-    rgba(250, 244, 241, .9),
-    rgba(245, 235, 230, .84)
+    rgba(239, 224, 216, .94),
+    rgba(232, 213, 204, .9)
   );
   box-shadow:
-    0 6px 24px rgba(67, 38, 30, .08),
+    0 6px 24px rgba(67, 38, 30, .1),
     inset 0 1px 4px rgba(0, 0, 0, .035);
 }
 
@@ -1169,7 +1154,7 @@ textarea {
 
 .expression-figma-page .char-count {
   position: absolute;
-  top: 82.55%;
+  top: 80.5%;
   right: 7.5%;
   margin: 0;
   color: rgba(33, 33, 32, .54);
@@ -1179,7 +1164,7 @@ textarea {
 
 .expression-submit {
   position: absolute;
-  top: 86.5%;
+  top: 84.45%;
   left: 50%;
   width: 17.33%;
   min-width: 0;

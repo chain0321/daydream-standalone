@@ -508,7 +508,6 @@
           '<span>世界母题</span>' +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
-        '<p class="expression-prompt">不需要完整，也不必像一个标准问题。</p>' +
         '<form class="ritual-form expression-ritual-form" data-form="expression">' +
           '<div class="ornate-textarea expression-textarea">' +
           '<textarea id="expression-input" maxlength="280" required ' +
