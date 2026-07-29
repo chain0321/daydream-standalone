@@ -413,6 +413,141 @@ textarea {
   letter-spacing: .06em;
 }
 
+/* Figma 141:382 — fiction base selection only */
+.onboarding-content.base-portal-content {
+  padding: 0;
+}
+
+.base-portal-screen {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 375 / 812;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.base-portal-background {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.base-portal-screen::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  content: "";
+  background: linear-gradient(180deg, rgba(239, 223, 216, .02), rgba(239, 223, 216, .05));
+  pointer-events: none;
+}
+
+.base-portal-heading {
+  position: absolute;
+  top: 40.4%;
+  left: 8%;
+  right: 8%;
+  z-index: 2;
+  text-align: center;
+}
+
+.base-portal-heading p {
+  margin: 0;
+  color: rgba(33, 29, 27, .64);
+  font-family: var(--serif);
+  font-size: clamp(12px, 3.35vw, 14px);
+  line-height: 1.65;
+  letter-spacing: .05em;
+  text-shadow: 0 1px 6px rgba(246, 234, 228, .9);
+}
+
+.base-portal-heading em {
+  color: var(--red);
+  font-style: normal;
+}
+
+.base-portal-heading h1 {
+  margin: 2px 0 0;
+  font-family: var(--serif);
+  font-size: clamp(14px, 3.8vw, 17px);
+  font-weight: 700;
+  line-height: 1.45;
+  letter-spacing: .04em;
+  text-shadow: 0 1px 6px rgba(246, 234, 228, .9);
+}
+
+.base-portal-grid {
+  position: absolute;
+  top: 50.2%;
+  left: 50%;
+  z-index: 2;
+  width: 66%;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 14%;
+  row-gap: 2.5%;
+  transform: translateX(-50%);
+}
+
+.portal-choice {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-radius: 10px;
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.portal-choice img {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 6px rgba(37, 20, 16, .09));
+  transition: transform .2s ease, filter .2s ease;
+}
+
+.portal-choice strong {
+  position: relative;
+  margin-top: 2px;
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: clamp(14px, 3.75vw, 17px);
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .02em;
+  text-indent: .02em;
+  white-space: nowrap;
+}
+
+.portal-choice:active {
+  transform: scale(.965);
+}
+
+.portal-choice:active img {
+  transform: translateY(-2px) scale(1.035);
+  filter: drop-shadow(0 10px 10px rgba(104, 18, 15, .22));
+}
+
+.portal-choice:active strong {
+  color: var(--red);
+}
+
+.portal-choice:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 2px;
+}
+
 /* ====== Tarot Card Spread — CSS-only cards ====== */
 .tarot-spread {
   position: relative;

@@ -240,7 +240,9 @@
         '<button class="icon-button" data-action="open-session-menu" aria-label="会话选项">•••</button>' +
       '</header>' +
       progress() +
-      '<div class="onboarding-content' + (options.wide ? " wide" : "") + '">' +
+      '<div class="onboarding-content' +
+        (options.wide ? " wide" : "") +
+        (options.contentClass ? " " + options.contentClass : "") + '">' +
         (state.restored ? '<button class="restore-note" data-action="dismiss-restore">已恢复上次进度 <span>继续</span></button>' : "") +
         content +
       '</div>' +
@@ -353,31 +355,34 @@
       );
     }
 
-    // Fiction fork: existing 4 base cards
+    // Fiction fork: Figma game-hall composition with four interactive doors
+    var doorAssets = {
+      reality: "素材/figma-base/reality-door.png",
+      scifi: "素材/figma-base/scifi-door.png",
+      fantasy: "素材/figma-base/fantasy-door.png",
+      psyche: "素材/figma-base/psyche-door.png"
+    };
     var cards = "";
     var baseKeys = Object.keys(BASES);
     for (var i = 0; i < baseKeys.length; i++) {
       var id = baseKeys[i];
       var base = BASES[id];
-      var hintsHtml = "";
-      for (var j = 0; j < base.hints.length; j++) {
-        hintsHtml += "<i>" + base.hints[j] + "</i>";
-      }
-      cards += '<button class="base-card" data-action="choose-base" data-value="' + id + '">' +
-        '<span class="base-mark">' + base.mark + '</span>' +
+      cards += '<button class="portal-choice portal-' + id + '" role="listitem" ' +
+        'data-action="choose-base" data-value="' + id + '" aria-label="选择' + esc(base.name) + '">' +
+        '<img src="' + doorAssets[id] + '" alt="" aria-hidden="true">' +
         '<strong>' + base.name + '</strong>' +
-        '<small>' + base.description + '</small>' +
-        '<span class="hint-row">' + hintsHtml + '</span>' +
       '</button>';
     }
     return onboardingShell(
-      '<div class="step-heading compact">' +
-        '<span class="eyebrow">03 · 选择世界基底</span>' +
-        '<h1>它以什么形态<br>第一次出现？</h1>' +
-        '<p>基底只决定表现形式，不限制你最终探索的问题。</p>' +
-      '</div>' +
-      '<div class="base-grid">' + cards + '</div>',
-      { wide: true }
+      '<div class="base-portal-screen">' +
+        '<img class="base-portal-background" src="素材/figma-base/hall-background.png" alt="" aria-hidden="true">' +
+        '<div class="base-portal-heading">' +
+          '<p>旅人，<em>词汇</em>将指引你前往你想去的</p>' +
+          '<h1>故事世界</h1>' +
+        '</div>' +
+        '<div class="base-portal-grid" role="list" aria-label="选择世界基底">' + cards + '</div>' +
+      '</div>',
+      { wide: true, contentClass: "base-portal-content" }
     );
   }
 
