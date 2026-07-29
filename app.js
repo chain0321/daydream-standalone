@@ -502,25 +502,34 @@
   }
 
   function renderExpression() {
+    var selectedCardArt = BASE_TAROT_ART[state.base] || "";
+    var selectedCardImage = selectedCardArt
+      ? '<img src="' + selectedCardArt + '" alt="" aria-hidden="true">'
+      : "";
     return onboardingShell(
-      '<div class="step-heading center expression-heading">' +
-        '<span class="eyebrow">05 · 留下一句话</span>' +
-        '<div class="chosen-theme">' +
-          '<span>你的母题</span>' +
+      '<div class="expression-figma-screen">' +
+        '<div class="selected-tarot-card' + (selectedCardArt ? ' has-card-art' : '') + '" aria-label="已选择母题：' + esc(state.selectedPrimaryTheme) + '">' +
+          selectedCardImage +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
-        '<h1>关于「' + esc(state.selectedPrimaryTheme) + '」，<br>你想问什么，或想说什么？</h1>' +
-        '<p>不需要完整，也不必像一个标准问题。</p>' +
-      '</div>' +
-      '<form class="ritual-form" data-form="expression">' +
-        '<div class="ornate-textarea">' +
+        '<form class="ritual-form expression-ritual-form" data-form="expression">' +
+          '<div class="ornate-textarea expression-textarea">' +
+            '<img class="expression-textbox-art" src="素材/figma-expression/text-box.png" alt="" aria-hidden="true">' +
           '<textarea id="expression-input" maxlength="280" required ' +
-            'placeholder="写下一个问题、想法或感受……" ' +
+            'placeholder="" ' +
             'aria-label="写下一个问题、想法或感受">' + esc(state.userExpression) + '</textarea>' +
-        '</div>' +
-        '<div class="char-count"><span data-count>' + state.userExpression.length + '</span> / 280</div>' +
-        '<button class="seal-cta" type="submit"><span>交给世界</span></button>' +
-      '</form>'
+          '</div>' +
+          '<div class="char-count"><span data-count>' + state.userExpression.length + '</span> / 280</div>' +
+          '<button class="seal-cta expression-submit" type="submit" aria-label="交给世界">' +
+            '<img src="素材/figma-expression/submit-button.png" alt="" aria-hidden="true">' +
+          '</button>' +
+        '</form>' +
+      '</div>',
+      {
+        wide: true,
+        contentClass: "expression-figma-content",
+        shellClass: "expression-figma-page"
+      }
     );
   }
 
