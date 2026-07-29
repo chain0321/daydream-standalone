@@ -510,13 +510,15 @@
       '<div class="expression-figma-screen">' +
         '<div class="selected-tarot-card' + (selectedCardArt ? ' has-card-art' : '') + '" aria-label="已选择母题：' + esc(state.selectedPrimaryTheme) + '">' +
           selectedCardImage +
+          '<span>世界母题</span>' +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
+        '<p class="expression-prompt">不需要完整，也不必像一个标准问题。</p>' +
         '<form class="ritual-form expression-ritual-form" data-form="expression">' +
           '<div class="ornate-textarea expression-textarea">' +
             '<img class="expression-textbox-art" src="素材/figma-expression/text-box.png" alt="" aria-hidden="true">' +
           '<textarea id="expression-input" maxlength="280" required ' +
-            'placeholder="" ' +
+            'placeholder="写下一个问题、想法或感受……" ' +
             'aria-label="写下一个问题、想法或感受">' + esc(state.userExpression) + '</textarea>' +
           '</div>' +
           '<div class="char-count"><span data-count>' + state.userExpression.length + '</span> / 280</div>' +

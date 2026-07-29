@@ -1004,6 +1004,21 @@ textarea {
   pointer-events: none;
 }
 
+.selected-tarot-card > span {
+  position: absolute;
+  top: 12px;
+  right: 8px;
+  left: 8px;
+  z-index: 2;
+  color: rgba(243, 232, 222, .78);
+  font-size: clamp(7px, 2vw, 9px);
+  letter-spacing: .16em;
+  text-align: center;
+  text-indent: .16em;
+  text-shadow: 0 1px 5px #000;
+  pointer-events: none;
+}
+
 .selected-tarot-card strong {
   position: absolute;
   right: 8px;
@@ -1019,6 +1034,21 @@ textarea {
   text-indent: .12em;
   text-shadow: 0 1px 3px #000, 0 0 10px #000;
   pointer-events: none;
+}
+
+.expression-prompt {
+  position: absolute;
+  top: 65.25%;
+  right: 10%;
+  left: 10%;
+  z-index: 2;
+  margin: 0;
+  color: rgba(75, 58, 51, .64);
+  font-family: var(--serif);
+  font-size: clamp(9px, 2.7vw, 11px);
+  letter-spacing: .04em;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .expression-ritual-form {
