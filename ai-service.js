@@ -1,8 +1,11 @@
 (function () {
-  /* ====== API 配置 ====== */
+  /* ====== API 配置 ======
+   * GitHub Pages 部署时，GitHub Actions 会替换 __DEEPSEEK_API_KEY__ 为实际值。
+   * 本地开发：直接在下方填写你的 API Key（不要提交到 git）。
+   */
   var API = {
     endpoint: "https://api.deepseek.com/v1/chat/completions",
-    apiKey: "sk-74512f69291e471f8bb31cd1522db812",
+    apiKey: "__DEEPSEEK_API_KEY__",
     model: "deepseek-v4-pro",
     timeout: 60000
   };
@@ -22,6 +25,8 @@
       responseDirective: "【光明基调】保持事实不变，在措辞与关注点上优先呈现修复、连接或重新选择的可能；不要保证圆满，也不要消除已经成立的代价。",
       storyDirective: "【光明基调】叙事可以沉重，但应让人物仍拥有一处可行动、可连接或可重新选择的余地；不要用巧合强行治愈。",
       guideDirective: "【光明基调】新的提示优先指向仍可修复的关系、可继承的痕迹、可重新打开的路径，但不能绕过已有风险与代价。",
+      constructionGuideDirective: "构建提示可轻微偏向连接、修复、传承或重新选择，但仍要保留阻力、边界和真实代价；不要直接写出“光明”。",
+      adjudicationDirective: "裁决时可优先指出这条设定打开的连接、修复或延续空间，但不要保证结果圆满，也不要抹去结构性代价。",
       extractionDirective: "气质只影响叙事取景，不是世界事实。不要因为光明基调而额外提取“治愈”“希望”等公理或规则。"
     },
     dark: {
@@ -37,6 +42,8 @@
       responseDirective: "【黑暗基调】保持事实不变，在措辞与关注点上优先呈现代价、禁忌、隐藏秩序或不可逆后果；不要自动消解不安，也不要额外渲染血腥与绝望。",
       storyDirective: "【黑暗基调】让暗流、代价与隐藏秩序持续产生后果，但保持克制；不要把所有选择都写成失败，也不要添加无依据的伤害。",
       guideDirective: "【黑暗基调】新的提示优先指向被遮蔽的关系、尚未偿还的代价、禁忌或隐藏秩序，但不要凭空制造暴力与绝望。",
+      constructionGuideDirective: "构建提示可轻微偏向代价、禁忌、隐性秩序或不可逆变化，但保持克制；不要直接写出“黑暗”，也不要凭空制造暴力与绝望。",
+      adjudicationDirective: "裁决时可优先指出设定中的代价、禁忌、隐性权力或不可逆影响，但不要额外渲染血腥、邪恶或必然失败。",
       extractionDirective: "气质只影响叙事取景，不是世界事实。不要因为黑暗基调而额外提取“诅咒”“阴谋”等公理或规则。"
     }
   };
@@ -75,31 +82,121 @@
     creation: ["灵感", "失控", "造物", "署名", "责任"]
   };
 
-  var BASE_SCENES = {
+  /*
+   * 虚构模式的四种基底不是风格标签，而是世界成立方式的硬边界。
+   * 内容依据《十人小组世界规则 3.0》S0：
+   * 现实=推演变量，幻想=形象创造，科幻=系统逻辑，心灵=内在具象。
+   */
+  var FICTION_BASE_PROFILES = {
     reality: {
       label: "现实世界",
-      placeTemplates: ["临河旧城的档案修复室", "城郊结合部的社区调解所", "老城区即将搬迁的家族药铺", "工业区深处一间仍在运转的旧钟表行"],
-      orderTemplates: ["这里的人相信，任何被登记的失物最终都会回到原主手中", "街坊之间有一条不成文的规矩：傍晚六点之后不谈公事", "每一代人都会在成年那天往家族的记事簿里添上一句话", "店铺无论盈亏，每月初五必须开门半天，只为等一个从未出现的客人"],
-      anomalyFormats: ["今晨，管理员收到一只没有寄件人、也没有失主姓名的旧木匣；匣底的归还日期写着明天，而领取栏里是来访者的笔迹", "调解所的黑板上出现了一行不属于任何在册调解员的字，写着一个在场所有人都回避的名字", "药铺的百子柜里，有一格药材在无人触碰的情况下持续减少，而减少的重量恰好等于多年前一桩旧账的数目", "钟表行里那座从不走动的挂钟突然开始倒转，每倒转一圈，墙上就多出一行没有人写下的字"]
-    },
-    scifi: {
-      label: "科幻世界",
-      placeTemplates: ["远日航线尽头的记忆校准站", "轨道城市底层的数据回收舱", "深空殖民地里最后一座仍在运行的意识备份塔", "星云边缘的废弃通讯中继器内部"],
-      orderTemplates: ["站内居民每隔七天交出一段记忆，以换取维持城市运转的能源", "所有人在出生时被分配一个数字身份，死亡后身份归入公共数据库供后人检索", "意识备份塔每年开放一次，允许居民删除一段不想要的人生记录", "中继器里的AI仍按照三百年前的协议，每天向不存在的地球发送一条问候"],
-      anomalyFormats: ["这一轮回收刚结束，中央存储却多出一段不属于任何居民的记录：画面里，尚未启用的第九舱门已经打开，而门后有人准确叫出了来访者的名字", "数据回收舱的日志显示，有一条信息在系统里循环了四十年，而它的收件人刚刚出生", "备份塔的管理AI拒绝了一次合法的删除请求，理由是'这段记录在未来仍有未完成的因果'", "中继器收到了一条回信，发送时间标注为四百年后，内容只有一句话和来访者的全名"]
+      definition: "基于现实环境、已知物理规律、真实社会机制与人的选择进行逻辑模拟。",
+      focus: "从“如果一个现实变量改变，会怎样”出发，推演它对制度、群体与日常生活造成的连锁后果。",
+      must: [
+        "只改变一个现实中可能发生、可能被实施或可由已知原因解释的变量",
+        "至少呈现“变量变化 → 直接后果 → 人群处境”这条因果链",
+        "所有规则都必须能由自然条件、人的行为、组织、市场、法律或当代可用技术执行"
+      ],
+      forbidden: [
+        "魔法、妖怪、神明、诅咒、预言、轮回、时间倒流、读心或任何超自然力量",
+        "意识上传、记忆买卖、超光速、全知AI等远超现实能力的技术",
+        "让情绪、梦境、记忆、名字、誓言等抽象事物直接变成可交易或可执法的物质",
+        "清醒税、梦境税、记忆税等只有概念感、缺少现实征收与执行机制的伪制度"
+      ],
+      seedShape: "一个现实变量 + 两层可追溯的社会后果 + 一个尚未解决的现实选择。",
+      example: "如果一座制造业城市把标准工作周缩短为四天，工厂、学校与照护系统将如何重新排班，谁从中受益，谁承担新增成本？",
+      check: "删掉所有修辞后，每件事是否仍能在现实新闻、社会实验或合理推演中发生？如果不能，必须重写。"
     },
     fantasy: {
       label: "幻想世界",
-      placeTemplates: ["雾脊山脚的誓言集市", "镜湖中央那座只有月缺之夜才会浮现的旧书阁", "遗忘森林边缘常年燃着蓝色火焰的锻造铺", "云海上空悬浮的钟塔底层"],
-      orderTemplates: ["这里的交易从不用钱，人们用一句永不反悔的承诺换取所需之物", "书阁里的每一本书都对应着一个在世之人的未尽之言，书页会自动书写", "锻造铺从不为同一只手打造两件器物，每件作品只能陪伴一个人走完一生", "钟塔的每一次鸣响都会让一个秘密被揭示，但敲钟人永远听不到自己敲响的那一声"],
-      anomalyFormats: ["日落前，一个蒙面摊主摆出了一枚无人铸造的银币；任何握住它的人都能收回一条旧誓言，但集市中央那棵记录誓约的古树会同时失去一个名字", "书阁里一本从未被写过的空白册突然有了第一行字，写的是来访者昨夜梦中的最后一句话", "锻造铺的炉火在无人添柴的情况下变成了白色，火中浮现出一件来访者从未见过却感到熟悉的器物", "钟塔在非整点时刻自行鸣响了一次，钟声结束后，塔底的门上出现了来访者的名字"]
+      definition: "存在魔法、妖怪、异族、神明或其他超自然存在，世界依照自身法则运转。",
+      focus: "进行丰富、生动、形象的创造，让力量、族群、地域或仪式可被清楚想象。",
+      must: [
+        "至少明确出现一种超自然力量、非人族群、奇异生物或幻想地域",
+        "给核心创造物一条可感知的生效条件、限制或代价",
+        "用这个世界自身的神话与文明逻辑解释后果"
+      ],
+      forbidden: [
+        "把核心奇迹最终解释为算法、实验、芯片或现代科技故障",
+        "只写朦胧意象而没有具体生物、地点、物件、能力或仪式",
+        "同时堆砌多套互不相关的魔法体系"
+      ],
+      seedShape: "一个鲜明的幻想创造物 + 一条内在法则 + 它给族群或生活造成的具体处境。",
+      example: "一片森林会收养迷路者的影子；影子可以替主人承担一次伤害，但此后会拥有独立的名字与归处。",
+      check: "世界是否拥有可看见、可描述的幻想创造，而不只是现实社会换上神秘名词？"
+    },
+    scifi: {
+      label: "科幻世界",
+      definition: "存在远超当代的科技或文明形态，但所有超越都建立在可辨认的机制与系统关系上。",
+      focus: "搭建系统自洽的科技和文明逻辑，说明能力、资源、权限、限制与社会后果如何相互连接。",
+      must: [
+        "明确一个技术或文明支点，并说明它解决了什么问题",
+        "给出至少一项资源、权限、能耗、风险或能力上限",
+        "呈现技术如何改变制度、阶层、空间或日常生活"
+      ],
+      forbidden: [
+        "用魔法、神谕、诅咒、命运等超自然力量替代技术机制",
+        "只堆砌量子、维度、意识等名词，却不给出用途与限制",
+        "万能、零代价、没有维护者和失效条件的技术"
+      ],
+      seedShape: "一个技术/文明支点 + 一套限制或资源逻辑 + 一个系统性社会后果。",
+      example: "轨道城市用居民的体温差发电；供能网络因此覆盖全城，但低温职业者被划入高风险配额。",
+      check: "去掉科技名词后，是否还能说清系统如何工作、由谁维护、受什么限制？如果不能，必须补足。"
     },
     psyche: {
       label: "心灵世界",
-      placeTemplates: ["一座只在半梦半醒时出现的候车厅", "记忆深处反复浮现的童年老屋走廊", "情绪沉积形成的无声图书馆", "由所有被压抑的道歉构成的倒影之湖"],
-      orderTemplates: ["每位旅人都要把一个不愿面对的念头留在寄存柜里，才会得到继续前行的车票", "走廊的尽头有一扇只在承认恐惧时才会打开的门，门后是恐惧本来的样子", "图书馆里每本书都是用被咽下的话装订而成，翻阅时会听见自己当年的声音", "湖面从不因风起浪，只在有人终于说出'对不起'时泛起一圈涟漪"],
-      anomalyFormats: ["今晚，广播念出了一个从未登记过的柜号。柜门自行弹开，里面没有物品，只有一张写着来访者今日心事的纸，而且最后一句仍在被看不见的笔缓慢续写", "走廊尽头的那扇门第一次在来访者尚未承认恐惧时自行开了一条缝，门缝里透出的光是来访者童年卧室夜灯的颜色", "图书馆里有一本书的封面是空白的，但每次放回书架后，书脊上会多出一个字，目前已经拼出了来访者名字的前两个字", "湖面在无风、无人的正午泛起了一圈涟漪，涟漪的中心悬浮着一句来访者多年前说过但已经忘记的道歉"]
+      definition: "世界由主观情绪、臆想、梦境、记忆或潜意识构成，内在经验可以成为空间与事物。",
+      focus: "让情绪、记忆与潜意识具象化，并通过稳定的对应关系探索内心的“真实”。",
+      must: [
+        "明确这个世界源自哪种情绪、记忆、梦境、欲望或潜意识结构",
+        "让至少一种内在状态对应到可感知的空间、物件、人物或变化",
+        "对应关系必须稳定，变化来自心理逻辑而非随机奇观"
+      ],
+      forbidden: [
+        "把心灵现象解释成普通魔法体系或未来科技产品",
+        "只写诡异梦境，却没有它与内在状态之间的对应关系",
+        "把心理诊断当成角色真相，或替玩家武断解释真实人格"
+      ],
+      seedShape: "一种内在来源 + 一条具象化对应规则 + 一个迫使世界暴露内在矛盾的变化。",
+      example: "一座由未说出口的话组成的公寓里，住户每隐瞒一次，房间就缩小一寸；承认并不会复原空间，只会打开新的门。",
+      check: "每个奇异现象是否都能追溯到某种情绪、记忆或潜意识关系？如果不能，必须重写。"
     }
+  };
+
+  var FICTION_FALLBACK_SEEDS = {
+    reality: [
+      {
+        title: "《缩短的一周》",
+        body: "一座制造业城市试行四天工作制，工资不变、产量不得下降。工厂改为轮班后，学校和照护机构仍按五天运行，新的时间缺口落在每个家庭身上。",
+        bodyExpanded: "这座以制造业为主的城市开始为期三年的四天工作制试验：企业不得降薪，也不能把停工日统一设在同一天。工厂用轮班维持产量，商业街迎来新的客流，但学校、医院和老人照护仍沿用五天周期。一个月后，有人获得了完整的休息日，也有人不得不支付更多照护费用。市议会即将决定是否扩大试验，争议集中在这些被转移的成本该由谁承担。"
+      },
+      {
+        title: "《退潮线以内》",
+        body: "连续三次风暴后，保险公司不再承保沿海低地住宅。房屋仍可居住，却无法贷款和转售；是否迁离不再只是安全选择，而成为家庭资产与社区存续的冲突。",
+        bodyExpanded: "一座沿海小城连续三年遭遇风暴，保险公司随后停止承保警戒线以内的住宅。政府没有强制搬迁，但银行不再接受这些房屋作为抵押，买家也迅速消失。留下的人仍能工作生活，却可能失去一生积蓄；搬走的人得到补贴，却必须放弃渔业、亲属和熟悉的社区网络。新的迁居方案即将表决，小城需要决定有限预算优先保护住房、港口，还是安置离开的人。"
+      }
+    ],
+    fantasy: [
+      {
+        title: "《影子的第二个名字》",
+        body: "雾林会收养迷路者的影子。影子能替主人承受一次伤害，代价是获得独立的名字与归处；越来越多归来者因此失去影子，也失去族群承认。",
+        bodyExpanded: "雾林中的古树会收养每个迷路者的影子，并允许影子替主人承受一次致命伤害。代价不是死亡，而是影子从此拥有自己的名字，不再服从原主人。林外诸族把有影子视为身份完整的证明，无影者不能继承土地，也不能参与祭典。近来，大批有名的影子在林中建立聚落，并要求各族承认它们与人同等的归属权；古老仪式第一次面对从未写入誓约的对象。"
+      }
+    ],
+    scifi: [
+      {
+        title: "《体温配额》",
+        body: "轨道城市用居民与舱外环境的温差发电，个人体温由公共系统统一调节。能源危机迫使系统提高配额，低温职业者首先失去居住权限。",
+        bodyExpanded: "轨道城市通过收集人体与舱外环境的温差维持基础供能，每个居民的体温数据都接入公共网络。系统只能调节热量分配，不能创造能源；航道中断后，管理机构不得不提高个人供能配额。长期在低温区工作的维修员最先被判定为低效用户，部分居住层因此面临关闭。技术仍按设计运行，真正悬而未决的是：有限热量应按劳动、健康、身份，还是生存概率分配。"
+      }
+    ],
+    psyche: [
+      {
+        title: "《未说出口的公寓》",
+        body: "一座公寓由住户未说出口的话构成。每次隐瞒都会让房间缩小，承认不会使它复原，只会打开一扇通往相关记忆的新门。",
+        bodyExpanded: "这座公寓的面积取决于住户未说出口的话：每次刻意隐瞒，墙壁就向内移动一寸；说出真相不会让空间复原，只会在墙上打开一扇通往相关记忆的门。住户可以选择穿门面对记忆，也可以继续在缩小的房间里生活。最近，所有房间同时出现了一扇没有对应记忆的门，门后传来相同的争吵声。公寓开始暴露一段并不属于任何单独住户、却被所有人共同压下的经历。"
+      }
+    ]
   };
 
   /* ====== Mock 提示卡 & 探索方向（API 回退用） ====== */
@@ -132,6 +229,107 @@
     fantasy:    ["找到古树上有没有你的名字", "查明那枚银币能收回谁的旧誓言", "找到炉火中浮现的器物——它属于谁"],
     psyche:     ["打开那个灰色按钮通向哪里", "查明寄存柜上正在被续写的是什么", "找到走廊尽头门后到底有什么"]
   };
+
+  /* 虚构模式沿用 quests 字段，但内容是“构建提示”，不是任务。 */
+  var FICTION_BUILD_GUIDES = {
+    reality: [
+      "【秩序｜规则×生计】补完一条设定：普通人如何遵守它，又由谁承担主要代价。",
+      "【人群｜资源×边界】补完一条设定：哪类人更容易获得资源，哪类人被排除在外。",
+      "【生活｜习俗×选择】补完一条设定：一种日常习俗如何影响人们的重要决定。",
+      "【空间｜中心×边缘】补完一条设定：核心区域与边缘区域最明显的差别是什么。"
+    ],
+    scifi: [
+      "【法则｜技术×限制】补完一条设定：核心技术能做什么，又绝对不能做什么。",
+      "【秩序｜权限×资源】补完一条设定：谁能调用关键系统，权限依据什么分配。",
+      "【人群｜改造×身份】补完一条设定：技术如何区分不同人群，并改变他们的地位。",
+      "【空间｜网络×盲区】补完一条设定：系统无法覆盖的区域如何继续运转。"
+    ],
+    fantasy: [
+      "【法则｜魔法×代价】补完一条设定：力量在什么条件下生效，又必须付出什么。",
+      "【生活｜仪式×传承】补完一条设定：一种仪式由谁主持，又在传承什么。",
+      "【人群｜血脉×资格】补完一条设定：某种资格如何获得，是否存在例外。",
+      "【空间｜圣地×边界】补完一条设定：重要地域受什么保护，又拒绝谁进入。"
+    ],
+    psyche: [
+      "【法则｜情绪×形态】补完一条设定：哪种感受会改变环境，变化遵循什么规律。",
+      "【人群｜记忆×关系】补完一条设定：共享或失去记忆会怎样改变人与人的关系。",
+      "【空间｜内在×出口】补完一条设定：人如何离开一处心灵空间，又会遗失什么。",
+      "【秩序｜共识×真实】补完一条设定：多人认知不一致时，世界依据什么维持稳定。"
+    ]
+  };
+
+  var FICTION_TONE_BUILD_GUIDES = {
+    light: [
+      "【关系｜断裂×修复】补完一条设定：已经破裂的联系通过什么方式获得重建机会。",
+      "【传承｜遗留×新生】补完一条设定：旧世界留下的什么仍能被后来者重新使用。"
+    ],
+    dark: [
+      "【禁忌｜沉默×秩序】补完一条设定：什么不能被公开谈论，沉默保护了谁。",
+      "【代价｜便利×失去】补完一条设定：一种普遍便利让人们逐渐失去了什么。"
+    ]
+  };
+
+  function fictionBuildGuides(base, tone, count, existing) {
+    var pool = (FICTION_BUILD_GUIDES[base] || FICTION_BUILD_GUIDES.reality)
+      .concat(FICTION_TONE_BUILD_GUIDES[tone === "dark" ? "dark" : "light"]);
+    var used = Array.isArray(existing) ? existing : [];
+    var available = pool.filter(function (item) { return used.indexOf(item) === -1; });
+    if (available.length < count) available = available.concat(pool);
+    return available.slice(0, count);
+  }
+
+  function fictionBaseSeedInstructions(base) {
+    var profile = FICTION_BASE_PROFILES[base] || FICTION_BASE_PROFILES.reality;
+    return [
+      "【" + profile.label + "｜最高优先级硬约束】",
+      "基底不是氛围词，而是决定世界如何成立的物理与叙事边界。母题、联想词、潜意识词和光暗基调都必须服从它，不能反过来改写基底。",
+      "世界说明：" + profile.definition,
+      "构建重点：" + profile.focus,
+      "",
+      "种子必须做到：",
+      profile.must.map(function (item) { return "· " + item; }).join("\n"),
+      "",
+      "绝对禁止：",
+      profile.forbidden.map(function (item) { return "· " + item; }).join("\n"),
+      "",
+      "种子结构：" + profile.seedShape,
+      "方向示例：" + profile.example,
+      "输出前自检：" + profile.check
+    ].join("\n");
+  }
+
+  function fictionSeedBoundaryIssue(seed, base) {
+    if (!seed || typeof seed.title !== "string" || typeof seed.body !== "string" || typeof seed.bodyExpanded !== "string") {
+      return "缺少标题、预览或展开文本";
+    }
+    var text = [seed.title, seed.body, seed.bodyExpanded].join(" ");
+    var supernatural = /(魔法|法术|妖怪|精灵|神明|神祇|诅咒|预言成真|通灵|灵魂出窍|轮回|复活|时间倒流|读心|心灵感应|梦境成真|异空间|传送门)/;
+    var farFutureTech = /(意识上传|记忆(?:交易|买卖|删除|移植)|超光速|曲率引擎|量子传送|星际殖民|脑机接口|全知.?AI|人工智能统治)/i;
+    var conceptInstitution = /(清醒税|梦境税|记忆税|情绪税|睡眠税|名字税|誓言税)/;
+    var scifiAnchor = /(技术|系统|算法|网络|数据|人工智能|AI|机器人|基因|能源|航天|轨道|殖民|义体|量子|脑机|仿生|芯片|工程|设备|协议|文明)/i;
+    var fantasyAnchor = /(魔法|法术|妖|精灵|异族|龙|神明|神祇|巫|咒|炼金|灵兽|法器|魔力|神殿|祭司|血脉|誓约|会说话的|悬浮(?:城|岛|山))/;
+    var psycheAnchor = /(情绪|记忆|潜意识|梦境|梦中|臆想|内心|意识|感受|恐惧|欲望|创伤|人格|思维|认知|幻觉|未说出口)/;
+
+    if (base === "reality") {
+      if (conceptInstitution.test(text)) return "现实基底出现了概念化伪制度（例如对清醒、梦境或记忆征税）";
+      if (supernatural.test(text)) return "现实基底出现了超自然力量或不可能现象";
+      if (farFutureTech.test(text)) return "现实基底出现了远超当代能力的科技";
+    } else if (base === "scifi") {
+      if (!scifiAnchor.test(text)) return "科幻基底没有明确的技术或文明系统支点";
+      if (supernatural.test(text) && !/(仿真|模拟|程序|系统|实验|技术)/.test(text)) {
+        return "科幻基底用超自然力量替代了技术机制";
+      }
+    } else if (base === "fantasy") {
+      if (!fantasyAnchor.test(text)) return "幻想基底缺少具体的魔法、异族、奇异生物或幻想地域";
+      if (scifiAnchor.test(text) && !fantasyAnchor.test(text)) return "幻想基底被写成了纯科技世界";
+    } else if (base === "psyche") {
+      if (!psycheAnchor.test(text)) return "心灵基底没有明确的情绪、记忆、梦境或潜意识来源";
+      if ((supernatural.test(text) || scifiAnchor.test(text)) && !psycheAnchor.test(text)) {
+        return "心灵基底被写成了魔法或科技现象，缺少内在对应关系";
+      }
+    }
+    return "";
+  }
 
   /* ====== Mock 渐进提示池（generateAdditionalGuides 回退用） ====== */
   var MOCK_ADDITIONAL_HINTS = {
@@ -330,7 +528,12 @@
     return compact.slice(0, Math.min(4, compact.length));
   }
 
-  /* ====== API 调用核心 ====== */
+  /* ====== API 调用核心 ======
+   * 直接通过 fetch 调用 DeepSeek API（OpenAI 兼容格式）。
+   * API Key 通过 GitHub Actions 在部署时注入，不在源码中存储。
+   */
+
+  /** 构建请求体 */
   function buildRequestBody(systemPrompt, userPrompt, opts, stream) {
     opts = opts || {};
     var body = {
@@ -341,8 +544,6 @@
       ],
       temperature: opts.temperature != null ? opts.temperature : 0.82,
       max_tokens: opts.maxTokens != null ? opts.maxTokens : 2048,
-      // V4 Pro 默认开启 thinking。结构化生成不需要长推理，显式关闭可避免
-      // reasoning_content 随机吃完整个输出预算。需要时仍可按调用显式启用。
       thinking: { type: opts.thinking === "enabled" ? "enabled" : "disabled" },
       stream: !!stream
     };
@@ -352,6 +553,7 @@
     return body;
   }
 
+  /** finish_reason 错误转换 */
   function finishReasonError(reason) {
     var messages = {
       length: "输出达到 max_tokens 上限，结果可能不完整",
@@ -364,14 +566,15 @@
 
   function reportAIFailure(operation, err) {
     var message = err && err.message ? err.message : String(err || "未知错误");
-    console.warn(operation + " API 失败，已使用本地回退：" + message);
+    console.warn(operation + " API 失败：" + message);
     if (typeof window !== "undefined" && typeof window.dispatchEvent === "function" && typeof CustomEvent === "function") {
       window.dispatchEvent(new CustomEvent("tarot-ai-error", {
-        detail: { operation: operation, message: message }
+        detail: { operation: operation, message: message, fullMessage: operation + " | " + message }
       }));
     }
   }
 
+  /** 非流式调用：fetch POST → JSON */
   function callAI(systemPrompt, userPrompt, opts) {
     opts = opts || {};
 
@@ -408,7 +611,7 @@
       var msg = choice.message;
       var content = msg ? (msg.content || "") : "";
       if (!content.trim() && msg && msg.reasoning_content) {
-        console.warn("API content 为空（reasoning 消耗了全部 tokens），reasoning 预览: " + (msg.reasoning_content || "").slice(0, 120));
+        console.warn("API content 为空（reasoning 消耗了全部 tokens）");
         throw new Error("API 返回空内容，reasoning 消耗了输出预算");
       }
       if (!content.trim()) throw new Error("API 返回空内容");
@@ -420,14 +623,13 @@
     });
   }
 
-  /** 流式 API 调用：通过 SSE 逐块接收内容，返回 Promise<string> */
+  /** 流式调用：fetch SSE → 逐块回调 */
   function callAIStream(systemPrompt, userPrompt, opts) {
     opts = opts || {};
     var onChunk = opts.onChunk || function () {};
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, API.timeout);
     var fullContent = "";
-    var reasoningLength = 0;
     var finishReason = null;
 
     return fetch(API.endpoint, {
@@ -464,65 +666,45 @@
             if (!choice) return;
             if (choice.finish_reason) finishReason = choice.finish_reason;
             var delta = choice.delta;
-            if (delta && delta.reasoning_content) {
-              reasoningLength += delta.reasoning_content.length;
-            }
             if (delta && delta.content) {
               fullContent += delta.content;
               onChunk(delta.content, fullContent);
             }
-          } catch (e) {
-            console.warn("跳过无法解析的 SSE 数据：" + e.message);
-          }
+          } catch (e) { /* 跳过无法解析的行 */ }
         }
 
-        function finishStream() {
-          clearTimeout(timer);
-          if (finishReason && finishReason !== "stop") {
-            reject(finishReasonError(finishReason));
-          } else if (!fullContent.trim() && reasoningLength > 0) {
-            reject(new Error("API 返回空内容（stream），reasoning 消耗了输出预算"));
-          } else if (!fullContent.trim()) {
-            reject(new Error("API 返回空内容（stream）"));
-          } else {
-            resolve(fullContent.trim());
-          }
-        }
-
-        function readStream() {
+        function pump() {
           reader.read().then(function (result) {
             if (result.done) {
-              buffer += decoder.decode();
-              if (buffer.trim()) processLine(buffer);
-              finishStream();
+              clearTimeout(timer);
+              if (finishReason && finishReason !== "stop") {
+                reject(finishReasonError(finishReason));
+                return;
+              }
+              if (!fullContent.trim()) {
+                reject(new Error("API 返回空内容（stream）"));
+                return;
+              }
+              resolve(fullContent.trim());
               return;
             }
-
             buffer += decoder.decode(result.value, { stream: true });
             var lines = buffer.split("\n");
-            // 最后一行可能不完整，留到下次
             buffer = lines.pop() || "";
-
-            for (var i = 0; i < lines.length; i++) {
-              processLine(lines[i]);
+            for (var li = 0; li < lines.length; li++) {
+              processLine(lines[li]);
             }
-
-            readStream();
+            pump();
           }).catch(function (err) {
             clearTimeout(timer);
-            if (err && err.name === "AbortError") {
-              reject(new Error("请求超时"));
-            } else {
-              reject(err);
-            }
+            reject(err);
           });
         }
-
-        readStream();
+        pump();
       });
     }).catch(function (err) {
       clearTimeout(timer);
-      if (err && err.name === "AbortError") throw new Error("请求超时");
+      if (err.name === "AbortError") throw new Error("请求超时");
       throw err;
     });
   }
@@ -823,91 +1005,142 @@
     }
 
     var fictionInstructions = !isArchaeology && params.base
-      ? "\n" + worldBoundary({ base: params.base, domain: "fiction" }) + "\n"
+      ? "\n" + fictionBaseSeedInstructions(params.base) + "\n"
+      : "";
+
+    var guideInstructions = isArchaeology
+      ? [
+          "【提示卡与探索方向 — 额外生成】",
+          "除了世界种子本身，还要生成两组辅助信息：",
+          "1. hints：2条简短的身份碎片。不要揭示 playerIdentity.secret；每条 value 不超过15字。",
+          "2. quests：1条开放式探索方向，不是任务清单，不检查完成度；控制在20字以内。",
+          "优先给出一个可以立刻开始调查或行动的方向。"
+        ].join("\n")
+      : [
+          "【虚构模式：构建提示 — 额外生成】",
+          "玩家不是来解密身份或完成任务，而是要继续构建这个虚构世界。",
+          "hints 必须返回空数组。",
+          "quests 返回3条“构建提示”。每条都要指出一个尚待补全的世界切面，引导玩家写下一条明确设定。",
+          "每条格式：『【切面｜关键词×关键词】补完一条设定：……』。",
+          "切面从法则、秩序、生活、人群、关系、空间、裂缝中选择；三条不要重复切面。",
+          "三条提示必须延续「" + ((FICTION_BASE_PROFILES[params.base] || FICTION_BASE_PROFILES.reality).focus) + "」这一构建重点，不得引入其他基底的成立方式。",
+          "使用宏观世界视角，不使用“你的身份”“你看见”“查明”“找到”等个人叙事或任务措辞。",
+          "引导句要具体、可回答，整条控制在34—58个汉字。",
+          activeTone.constructionGuideDirective
+        ].join("\n");
+
+    var fictionWritingExamples = !isArchaeology
+      ? [
+          "本基底的合格方向示例：",
+          "  · 「" + ((FICTION_BASE_PROFILES[params.base] || FICTION_BASE_PROFILES.reality).example) + "」",
+          "    → 只学习它遵守基底边界和建立因果/机制的方式，不要照抄内容。",
+          "",
+          "本模式不要套用统一的“神秘异常”模板。现实写变量推演，幻想写鲜明创造，科幻写系统机制，心灵写内在具象。"
+        ].join("\n")
+      : [
+          "好的写法（来自参考案例）：",
+          "  · 「人无法脱离土地而存活。据说，只有吃家乡种的粮食，才可裹腹。」",
+          "    → 一句话立住世界规则，具体、明确、可被感知。",
+          "  · 「你们是平阳路404号精神疗养院的病友，唯一的共同点是：你们都曾'错误地'记得某件事。」",
+          "    → 具体处境 + 异常的信息 + 读者立刻想知道'什么事'。",
+          "  · 「五年前，一场花粉癌疫席卷而来。它不攻击植物，只猎杀人类。」",
+          "    → 清晰的异常设定，不抒情，不解释为什么。",
+          "",
+          "坏的写法：",
+          "  · 「今夜炉火不熄，反而凝成一面无声的镜。」— 只有意象，没有信息。",
+          "  · 「当彩带与气球成为毒药，人们在笑声中溺亡。」— 比喻代替了事实。",
+          "  · 禁止：空洞抒情、堆砌比喻、看似深刻实则什么都没说的句子。"
+        ].join("\n");
+
+    var fictionOutputExample = !isArchaeology
+      ? JSON.stringify({
+          title: "世界种子标题",
+          body: "60—80字：严格按所选基底建立一个局部世界切口",
+          bodyExpanded: "150—200字：只展开同一核心变量、创造物、技术系统或内在对应关系",
+          hints: [],
+          quests: fictionBuildGuides(params.base, params.tone, 3, [])
+        })
       : "";
 
     var systemPrompt = [
       "你是一个塔罗世界构建系统中的世界种子生成器。",
       "根据输入生成一个不完整、有情境感的世界种子。",
       "",
-      "核心原则：展开世界一角，而非描述整个世界。",
+      isArchaeology
+        ? "核心原则：展开世界一角，而非描述整个世界。"
+        : "核心原则：展开世界一角，并严格用所选基底规定的方式让它成立；基底边界优先于母题、联想词与气质。",
       archaeologyInstructions,
       fictionInstructions,
       "",
       "写作风格（非常重要）：",
       "- 世界种子是设定片段、情境钩子，不是散文也不是诗。",
-      "- 每一句话都必须承担叙事功能：交代处境、建立规则、呈现异常、留下切口。",
+      isArchaeology
+        ? "- 每一句话都必须承担叙事功能：交代处境、建立规则、呈现异常、留下切口。"
+        : "- 每一句话都必须承担构建功能：明确基底要素、建立因果或机制、呈现后果、留下待补全切口。",
       "",
-      "好的写法（来自参考案例）：",
-      "  · 「人无法脱离土地而存活。据说，只有吃家乡种的粮食，才可裹腹。」",
-      "    → 一句话立住世界规则，具体、明确、可被感知。",
-      "  · 「你们是平阳路404号精神疗养院的病友，唯一的共同点是：你们都曾'错误地'记得某件事。」",
-      "    → 具体处境 + 异常的信息 + 读者立刻想知道'什么事'。",
-      "  · 「五年前，一场花粉癌疫席卷而来。它不攻击植物，只猎杀人类。」",
-      "    → 清晰的异常设定，不抒情，不解释为什么。",
-      "",
-      "坏的写法：",
-      "  · 「今夜炉火不熄，反而凝成一面无声的镜。」— 只有意象，没有信息。",
-      "  · 「当彩带与气球成为毒药，人们在笑声中溺亡。」— 比喻代替了事实。",
-      "  · 禁止：空洞抒情、堆砌比喻、看似深刻实则什么都没说的句子。",
+      fictionWritingExamples,
       "",
       "自检：每句话删掉后，世界是否会丢失一件具体的事？不会 → 删。",
       "",
       "你需要输出两个版本：",
       "1. body — 极简预览版，严格控制在 60—80 个汉字。",
-      "   地点/处境 + 异常 + 进入切口。像设定的第一句话。",
+      isArchaeology
+        ? "   地点/处境 + 异常 + 进入切口。像设定的第一句话。"
+        : "   核心基底要素 + 它造成的首轮后果 + 待补全切口。",
       "2. bodyExpanded — 展开版，严格控制在 150—200 个汉字。",
-      "   把 body 中的处境和异常展开为一个可进入的情境片段。",
+      isArchaeology
+        ? "   把 body 中的处境和异常展开为一个可进入的情境片段。"
+        : "   只展开 body 中同一个核心变量、创造物、技术系统或心灵对应关系，不另开第二套世界原理。",
       "   只写对理解这个世界必不可少的东西：",
-      "   · 异常造成了什么后果（不是它'看起来怎样'，而是它改变了什么），",
+      isArchaeology
+        ? "   · 异常造成了什么后果（不是它'看起来怎样'，而是它改变了什么），"
+        : "   · 核心设定如何运作，以及它具体改变了什么，",
       "   · 身处其中的人面临什么选择或困境，",
       "   · 一个让人想继续追问的收尾（不回答，只打开）。",
       "   不要：",
       "   · 堆砌感官描写（气味、颜色、光线、材质、声音），",
-      "   · 把抽象概念具象化为奇怪的物理现象（如'记忆结晶成灰'、'战栗堆积在床头'），",
+      !isArchaeology && params.base === "psyche"
+        ? "   · 随机堆砌梦境意象；内在感受的具象化必须有稳定、可追溯的对应规则，"
+        : "   · 把抽象概念具象化为奇怪的物理现象（如'记忆结晶成灰'、'战栗堆积在床头'），",
       "   · 背景历史、人物身世、多条线索、完整场景描写。",
       "   一句话自检：如果删掉这句话，我还会不会想进入这个世界？不会 → 保留。会 → 删掉。",
       "",
       "硬性要求：",
-      "- 异常必须与母题存在隐性联系，但不要点明。",
+      isArchaeology
+        ? "- 异常必须与母题存在隐性联系，但不要点明。"
+        : "- 核心设定可以与母题存在隐性联系，但绝不能为了母题制造违反所选基底的现象。",
       !isArchaeology && params.primaryPosition && params.primaryPosition.label
         ? "- 将牌位「" + params.primaryPosition.label + "」视为一级母题进入世界的叙事身份。牌位不是装饰词，生成的情境必须体现其作用，但不要直接复述牌位名称。"
         : "",
-      "- 不列规则、不写完整设定、不解释含义。",
-      "- 人物、原因、世界法则全部留空。",
-      "- 不要过度发明专有概念名词。世界种子的吸引力来自情境和异常，而非生造术语。每段最多出现 1—2 个具名的设定概念，其余用日常语言描述。",
+      isArchaeology
+        ? "- 不列规则、不写完整设定、不解释含义。"
+        : "- 不列完整规则集；只明确一项让当前基底成立的核心变量、法则、机制或对应关系。",
+      isArchaeology
+        ? "- 人物、原因、世界法则全部留空。"
+        : "- 原因与运作方式不能全部留空；至少给出足以证明它属于所选基底的信息，其余细节留给玩家构建。",
+      isArchaeology
+        ? "- 不要过度发明专有概念名词。世界种子的吸引力来自情境和异常，而非生造术语。每段最多出现 1—2 个具名的设定概念，其余用日常语言描述。"
+        : "- 不要过度发明专有概念名词。世界种子的吸引力来自核心设定及其后果，而非生造术语。每段最多出现 1—2 个具名概念，其余用日常语言描述。",
       activeTone.seedDirective,
       params.rejectedWorlds && params.rejectedWorlds.length > 0
-        ? "- 以下世界已被用户看过但拒绝进入，请生成与它们完全不同类型的世界种子（不同的地点、不同的异常形态、不同的进入方式）：" + params.rejectedWorlds.map(function (w, i) { return "反例" + (i + 1) + "：" + w.title + "（方向词：" + w.secondaryTheme + "）"; }).join("；")
+        ? "- 以下世界已被用户看过但拒绝进入，请生成与它们完全不同的世界种子（不同地点、不同核心设定、不同后果），但仍须留在当前基底内：" + params.rejectedWorlds.map(function (w, i) { return "反例" + (i + 1) + "：" + w.title + "（方向词：" + w.secondaryTheme + "）"; }).join("；")
         : "",
       params.subconsciousWords && params.subconsciousWords.length > 0
         ? "用户通过冥想收集了以下潜意识的词语碎片，请将它们作为隐藏意象融入世界种子：\n" +
           params.subconsciousWords.map(function (w) { return "· " + w; }).join("\n") + "\n\n" +
           "融入规则：\n" +
           "· 这些词是潜意识的碎片，不是必须使用的素材。融不进去就放弃——宁可少用一个词，也不为了塞词而写无意义的句子。\n" +
-          "· 如果某个词恰好与这个世界的情境有共鸣，让它作为叙事的底色存在（如'灰烬'可以是一段已经被烧掉的往事），而不是作为奇怪的物理现象直接出场（如'灰烬从某处剥落'）。\n" +
-          "· 抽象词不展开、不解释、不具象化。"
+          (!isArchaeology && params.base === "psyche"
+            ? "· 心灵基底允许将其中一个词转化为内在空间或事物，但必须说明它与情绪、记忆或潜意识的稳定对应关系。\n· 其余词只作底色，不要同时具象化。"
+            : "· 如果某个词恰好与这个世界的情境有共鸣，让它作为叙事的底色存在（如'灰烬'可以是一段已经被烧掉的往事），而不是作为奇怪的物理现象直接出场（如'灰烬从某处剥落'）。\n· 抽象词不展开、不解释、不具象化。")
         : "",
       "",
-      "【提示卡与探索方向 — 额外生成】",
-      "除了世界种子本身，你还需要生成两组辅助信息：",
-      "",
-      "1. hints（提示卡）：2 条简短的「身份碎片」，帮助玩家在进入世界后获得初始抓手。",
-      "   每条是一个 label—value 对，如 { \"label\": \"你的身份\", \"value\": \"旧商行的账房\" }。",
-      "   不要直接揭示 playerIdentity.secret，只给出能让玩家感知到「我不太对劲」的半透明线索。",
-      "   label 建议类别：身份、归属地、与你有关的人、你知道而别人不知道的事、有人对你的态度……",
-      "   只选 2 条最有叙事张力的。",
-      "   value 控制在 15 个字以内。",
-      "",
-      "2. quests（探索方向）：1 条开放式的探索方向，一句话，控制在 20 字以内。",
-      "   不是任务清单，不检查完成度——是给玩家一个「进来之后可以先做什么」的起点。",
-      "   优先给出一个紧迫的方向（危机/时限），因为后续互动中会自动追加更多探索方向。",
-      "   写法：'查明货船最后停靠的港口' 而不是 '完成主线任务一'。",
+      guideInstructions,
       "",
       "返回严格JSON：",
       (isArchaeology
         ? '{ "title": "世界种子标题", "body": "60-80字预览", "bodyExpanded": "150-200字展开", "playerIdentity": { "role": "玩家身份", "secret": "隐藏真相", "knownBy": ["知情者1", "知情者2"], "firstClue": "第一条身份线索" }, "hints": [{ "label": "你的身份", "value": "旧商行的账房" }, { "label": "与你有关的人", "value": "码头上叫你另一个名字的人" }], "quests": ["查明货船停靠的最后一站"] }'
-        : '{ "title": "世界种子标题", "body": "60-80字预览", "bodyExpanded": "150-200字展开", "hints": [{ "label": "你正在……", "value": "档案室值夜班" }, { "label": "你知道的事", "value": "登记册上有一个不存在的人" }], "quests": ["查明木匣的失主是谁"] }')
+        : fictionOutputExample)
     ].filter(Boolean).join("\n");
 
     var domainLabel = isArchaeology && params.material
@@ -931,15 +1164,37 @@
     try {
       var text = await callAI(systemPrompt, userPrompt, { temperature: 0.88, maxTokens: 4096, onChunk: onChunk, responseFormat: "json_object" });
       var result = parseJSON(text, null);
+      var firstBoundaryIssue = !isArchaeology ? fictionSeedBoundaryIssue(result, params.base) : "";
+      if (firstBoundaryIssue) {
+        console.warn("世界种子越过基底边界，执行一次定向重写：" + firstBoundaryIssue);
+        var repairPrompt = [
+          userPrompt,
+          "",
+          "【上一次结果未通过基底检定】",
+          "问题：" + firstBoundaryIssue,
+          "上一次结果：" + JSON.stringify(result),
+          "请完全重写世界种子，不要只替换个别名词。新结果必须严格通过「" +
+            ((FICTION_BASE_PROFILES[params.base] || FICTION_BASE_PROFILES.reality).label) +
+            "」的允许项、禁止项与输出前自检。"
+        ].join("\n");
+        text = await callAI(systemPrompt, repairPrompt, { temperature: 0.7, maxTokens: 4096, responseFormat: "json_object" });
+        result = parseJSON(text, null);
+      }
       if (result && typeof result.title === "string" && typeof result.body === "string" && typeof result.bodyExpanded === "string") {
         var bodyLen = result.body.length;
         var expLen = result.bodyExpanded.length;
+        var boundaryIssue = !isArchaeology ? fictionSeedBoundaryIssue(result, params.base) : "";
+        if (boundaryIssue) throw new Error("世界种子违反" + domainLabel + "边界：" + boundaryIssue);
         if (bodyLen >= 30 && bodyLen <= 150 && expLen >= 60) {
           return {
             title: result.title, body: result.body, bodyExpanded: result.bodyExpanded,
             playerIdentity: (isArchaeology && result.playerIdentity) ? result.playerIdentity : null,
-            hints: Array.isArray(result.hints) ? result.hints : [],
-            quests: Array.isArray(result.quests) ? result.quests : []
+            hints: isArchaeology && Array.isArray(result.hints) ? result.hints : [],
+            quests: isArchaeology
+              ? (Array.isArray(result.quests) ? result.quests.slice(0, 1) : [])
+              : (Array.isArray(result.quests) && result.quests.length
+                ? result.quests.slice(0, 3)
+                : fictionBuildGuides(params.base, params.tone, 3, []))
           };
         }
         if (bodyLen > 150) console.warn("世界种子 body 过长 (" + bodyLen + "字)，回退 mock");
@@ -948,7 +1203,7 @@
       throw new Error("解析结果不符格式");
     } catch (err) {
       reportAIFailure("生成世界种子", err);
-      // 回退 mock：现存模式用 MATERIAL_SCENES，虚构模式用 BASE_SCENES
+      // 回退：现存模式用 MATERIAL_SCENES；虚构模式使用经过基底校验的完整种子。
       if (isArchaeology && params.material && MATERIAL_SCENES[params.material]) {
         var mScene = MATERIAL_SCENES[params.material];
         var mPlace = pick(mScene.placeTemplates);
@@ -969,66 +1224,10 @@
         };
       }
 
-      // Fiction fallback (original logic)
-      var scene = BASE_SCENES[params.base];
-      var place = pick(scene.placeTemplates);
-      var anomaly = pick(scene.anomalyFormats);
-      var entranceMap = {
-        reality: ["值班册停在空白的一行。门外有人轻轻叩了三下。", "电话响了一声就挂断，来电显示是十年前已停用的号码。", "掌柜今早只留了一张字条：按你觉得对的方式做。", "所有钟同时停了一秒，只有那座倒转的挂钟没有恢复。"],
-        scifi: ["校准台亮起一行从未被输入过的指令，光标在等一个回答。", "屏幕上弹出一行字：请确认你是否愿意知道这条信息的全部内容。", "AI 拒绝了一次合法的删除请求，理由是这段记录在未来仍有未完成的因果。", "信号灯开始用莫尔斯码闪烁，翻译过来只有两个字：来吧。"],
-        fantasy: ["银币躺在掌心，树上有一片叶子开始褪色。摊主没有催促。", "空白册有了第一行字，旁边出现一个逗号，像句子还在等后半句。", "炉火变成了白色，火中浮现一件来访者从未见过却感到熟悉的器物。", "钟塔自行鸣响了一次，塔底的门上出现了来访者的名字。"],
-        psyche: ["所有时钟同时停了一分钟。检票员把钥匙推到面前。", "走廊的灯一盏盏熄灭，只有尽头的门缝还亮着。", "那本空白封面的书已经翻开，第一页只有一行字：你准备好了吗。", "湖面泛起一圈涟漪，中心多了一艘没有桨的小船。"]
-      };
-      var entrance = pick(entranceMap[params.base]);
-
-      var entranceExpandedMap = {
-        reality: [
-          "值班册停在空白的一行，页角微微卷起。门外有人轻轻叩了三下，落在两次呼吸之间。房间里弥漫着旧纸和草药的气味，天光一寸寸暗下去。没有人催促——先查看异常，还是先写下名字——但门外那个人不会一直等。",
-          "电话响了一声就挂断。来电显示是十年前已注销的号码，屏幕冷光在昏暗的档案室里格外刺眼。登记表被翻到新的一页，钢笔搁在一旁，墨水未干。空气里浮着若有若无的桂花香——旧城区早已砍掉的那棵桂花树的气味。",
-          "掌柜今早只留了一张字条：按你觉得对的方式做。百子柜里那格药材仍在减少，减少的重量恰好等于多年前一桩旧账的数目。铜秤挂在梁下，秤盘微微倾斜，像有什么看不见的东西刚被取走。",
-          "所有钟同时停了一秒。只有那座从不走动的倒转挂钟没有恢复——它仍在逆时针转动，每转一圈，墙上就多出一行没人写下的字。黄铜机件的咔嗒声退到远处，只剩它在寂静中一格一格数着什么。"
-        ],
-        scifi: [
-          "校准台亮起一行从未被输入过的指令，字符在幽蓝屏幕上缓慢浮现。光标在句子末尾闪烁，在等一个回答。空气中电离味浓了一些，仿佛某种能量场正在舱室里悄悄改变。舱壁的光从冷白过渡到深蓝，像一次极慢的日落。",
-          "屏幕上弹出一行字：请确认你是否愿意知道这条信息的全部内容。「暂不」按钮是灰色的。这条信息在系统里循环了四十年——它的收件人刚刚出生。数据回收舱角落里，一盏指示灯固执闪烁，颜色是不在标准色谱里的深紫。",
-          "AI 拒绝了一次合法的删除请求，日志里留下备注：这段记录在未来仍有未完成的因果。备份塔的管理面板上，那行备注的字体和其他日志不同——系统里唯一一次使用了被废弃的旧版字体。冷却系统的低频嗡鸣像某种巨物在远处呼吸。",
-          "信号灯开始用莫尔斯码闪烁，翻译过来只有两个字：来吧。AI 说这不是它发送的。波形图显示信号来源是一个未标注的坐标，指向星云边缘那片三百年没人涉足的区域。通讯室里弥漫着老旧电路板发热的焦糖气味。"
-        ],
-        fantasy: [
-          "银币躺在掌心，比看上去更凉更沉。树上有一片叶子正在褪色，金色一寸寸退回苍白。摊主没有催促，只点了点叶背上那个尚未消失的字——一个在梦里写过、醒来后却想不起来的名字。雾中只有这棵记录誓约的古树格外清晰。",
-          "空白册有了第一行字，写的是昨夜梦中的最后一句话，一字不差。旁边出现一个逗号，像在等后半句。书阁穹顶裂缝倾泻下光，楼梯自己向下延伸了一级，木头呻吟声在安静里格外清晰。空气中弥漫着旧书页和月光混合的气味。",
-          "炉火无人添柴时变成了白色，火焰近乎凝固。火中浮现一件器物——从未见过却感到熟悉。门槛上有一行灰烬写的字：这一次可以为你破例。锻造铺墙上挂满从未被取走的成品，在火光中投下奇异的影子。",
-          "钟塔在非整点自行鸣响。塔底的门上出现了来访者的名字，用不会反光的墨水写成。绳索末端系着一把不在任何档案里的钥匙，柄上刻着六芒星，星中央有一道极细的裂纹。"
-        ],
-        psyche: [
-          "所有时钟同时停了一分钟。检票员把钥匙推到面前，动作极慢，像在水下移动。合上柜门、擦掉那句话、等它写完——三个选项，但寄存柜屏幕上还有第四个灰色按钮，没有任何标注。空气中弥漫着雨前的臭氧味，尽管候车厅在地下三层。",
-          "走廊的灯一盏盏熄灭，从远到近，像有什么在沿走廊走来。尽头门缝还亮着，透出的光是童年卧室夜灯的颜色——介于琥珀和蜂蜜之间的暖黄。门后的声音很像多年前的自己，说的却不是记忆中的话。壁纸花纹在昏暗中缓慢改变形状。",
-          "那本空白封面的书已经翻开，第一页只有一行字：你准备好了吗。这本书每次被放回书架，书脊上都会多出一个字——已拼出了来访者名字的前两个字。空气中是旧书页灰尘的气味，像被遗忘的承诺在缓慢氧化。周围书架上有几本书在无人触碰时自己翻页。",
-          "湖面在无风的正午泛起涟漪。中心多了一艘没有桨的小船，船底刻着：只有说出那句话的人才能划动它。湖水从墨绿变成近乎黑色，仿佛湖底有扇门刚被打开。空气中有极淡的咸味，像眼泪——尽管这片湖从来都不是咸的。"
-        ]
-      };
-      var entranceExpanded = pick(entranceExpandedMap[params.base]);
-
-      var titlePrefix = {
-        reality: { light: ["归还", "修复", "重逢"], dark: ["失物", "隐瞒", "代价"] },
-        scifi: { light: ["重连", "唤醒", "校准"], dark: ["越权", "异常", "篡改"] },
-        fantasy: { light: ["新生", "解咒", "重铸"], dark: ["代价", "失落", "反噬"] },
-        psyche: { light: ["面对", "找回", "照亮"], dark: ["回响", "暗涌", "吞噬"] }
-      };
-      var titleSuffixes = {
-        reality: ["档案", "失物簿", "旧档"], scifi: ["日志", "信号", "协议"],
-        fantasy: ["誓约", "孤本", "遗物"], psyche: ["梦枕", "余音", "镜渊"]
-      };
-      var prefix = pick(titlePrefix[params.base][params.tone]);
-      var suffix = pick(titleSuffixes[params.base]);
-      var title = "《" + prefix + suffix + "》";
-
-      // 短版 body：地点 + 异常 + 入口，~70字
-      var body = place + "。" + anomaly + "。" + entrance;
-      // 展开版 bodyExpanded：加入环境、感官、氛围，~150-200字
-      var bodyExpanded = place + "。" + anomaly + "。" + entranceExpanded;
-      return { title: title, body: body, bodyExpanded: bodyExpanded,
-        hints: (MOCK_HINTS[params.base] || []).slice(0, 2), quests: (MOCK_QUESTS[params.base] || []).slice(0, 1) };
+      var fallbackPool = FICTION_FALLBACK_SEEDS[params.base] || FICTION_FALLBACK_SEEDS.reality;
+      var fallbackSeed = pick(fallbackPool);
+      return { title: fallbackSeed.title, body: fallbackSeed.body, bodyExpanded: fallbackSeed.bodyExpanded,
+        hints: [], quests: fictionBuildGuides(params.base, params.tone, 3, []) };
     }
   }
 
@@ -1161,22 +1360,28 @@
   }
 
   /* ====== 3.6 渐进式生成提示卡与探索方向 ====== */
-  async function generateAdditionalGuides(worldSeed, worldState, interactionLog, existingHints, existingQuests, mockKey, tone) {
+  async function generateAdditionalGuides(worldSeed, worldState, interactionLog, existingHints, existingQuests, mockKey, tone, domain) {
     var activeTone = toneProfile(tone);
+    var isFiction = domain === "fiction";
+    var constructionBoundary = isFiction
+      ? worldBoundary({ domain: "fiction", base: mockKey })
+      : "";
     // 提取世界种子摘要
     var seedTitle = worldSeed && worldSeed.title ? worldSeed.title : "";
     var seedContext = worldSeed && worldSeed.bodyExpanded ? worldSeed.bodyExpanded : "";
 
     // 提取当前世界状态摘要
     var axioms = (worldState && worldState.axioms) ? worldState.axioms : [];
+    var rules = (worldState && worldState.rules) ? worldState.rules : [];
     var events = (worldState && worldState.events) ? worldState.events : [];
     var entities = (worldState && worldState.entities) ? worldState.entities : [];
     var relationships = (worldState && worldState.relationships) ? worldState.relationships : [];
     var locations = (worldState && worldState.locations) ? worldState.locations : [];
 
     var worldSummary = "";
-    if (axioms.length) worldSummary += "已确立的设定：" + axioms.map(function (a) { return a.name || a; }).join("；") + "\n";
-    if (events.length) worldSummary += "已发生的事件：" + events.slice(-3).map(function (e) { return e.name || e; }).join("；") + "\n";
+    if (axioms.length) worldSummary += "底层公理：" + axioms.map(function (a) { return a.text || a.name || a; }).join("；") + "\n";
+    if (rules.length) worldSummary += "运行规则：" + rules.map(function (r) { return r.text || r.name || r; }).join("；") + "\n";
+    if (events.length) worldSummary += "已发生的事件：" + events.slice(-3).map(function (e) { return e.text || e.title || e.name || e; }).join("；") + "\n";
     if (entities.length) worldSummary += "已知人物/组织：" + entities.slice(0, 5).map(function (e) { return e.name || e; }).join("、") + "\n";
     if (relationships.length) worldSummary += "已知关系：" + relationships.slice(0, 3).map(function (r) {
       return r && r.from && r.to ? r.from + " → " + r.to + "（" + (r.type || "关联") + "）" : String(r || "");
@@ -1200,31 +1405,51 @@
       existingSummary += "已有提示卡：" + existingHints.map(function (h) { return h.label + "：" + h.value; }).join("；") + "\n";
     }
     if (existingQuests && existingQuests.length) {
-      existingSummary += "已有探索方向：" + existingQuests.join("；");
+      existingSummary += (isFiction ? "已有构建提示：" : "已有探索方向：") + existingQuests.join("；");
     }
 
-    var systemPrompt = [
-      "你是叙事引导助手。玩家正在与一个动态生长的世界互动。",
-      "",
-      "根据当前世界状态和玩家最近的互动，生成 **1—2 条新的提示卡（hints）** 和 **1 条新的探索方向（quest）**。",
-      "",
-      "【生成原则】",
-      "1. 新的引导必须与当前世界状态有明确关联——指向已被确立但尚未展开的叙事线。",
-      "2. 绝对不要重复已有提示卡和探索方向的内容。",
-      "3. 优先指向：尚未解释的设定、已有事件的自然后果、已被提及但未深挖的人物或地点。",
-      "4. 如果世界还很空（几乎没有设定和事件），则基于世界种子的初始情境来生成。",
-      "5. 如果世界已经有丰富的设定和事件，则基于它们的张力和未解之处来生成。",
-      "6. " + activeTone.guideDirective,
-      "",
-      "【格式】",
-      "hints 每条是 { \"label\": \"类别\", \"value\": \"简短内容，15字以内\" }",
-      "quests 每条是一句话，20字以内。",
-      "",
-      "如果当前世界状态不足以产生新的有意义的引导，可以返回空数组。",
-      "",
-      "返回严格JSON：",
-      "{ \"hints\": [{ \"label\": \"...\", \"value\": \"...\" }], \"quests\": [\"...\"] }"
-    ].join("\n");
+    var systemPrompt = isFiction
+      ? [
+          "你是虚构世界构建提示生成器。玩家正在逐步补全一个尚未写完的世界。",
+          "",
+          "根据已成立的世界事实与最近互动，生成1条新的构建提示。",
+          "它不是身份线索、调查任务或剧情续写，而是邀请玩家补充一条世界设定。",
+          "",
+          "【生成原则】",
+          "1. 优先补足当前最薄弱的切面：法则、秩序、生活、人群、关系、空间或裂缝。",
+          "2. 如果刚建立了一条规则，优先追问它影响谁、排除谁、有什么例外或代价。",
+          "3. 不重复已有构建提示，不直接替玩家给出答案。",
+          "4. 不使用个人视角，不写“你的身份”“你看见”“查明”“找到”。",
+          "5. " + activeTone.constructionGuideDirective,
+          "6. 新提示必须服从以下世界基底硬边界，不能引导玩家引入另一种基底：\n" + constructionBoundary,
+          "",
+          "【格式】",
+          "hints 必须是空数组。",
+          "quests 只返回1条，格式为：『【切面｜关键词×关键词】补完一条设定：……』。",
+          "整条控制在34—58个汉字，句子明确、可直接改写为世界事实。",
+          "",
+          "返回严格JSON：",
+          "{ \"hints\": [], \"quests\": [\"【切面｜词×词】补完一条设定：……\"] }"
+        ].join("\n")
+      : [
+          "你是叙事引导助手。玩家正在与一个动态生长的现存世界互动。",
+          "",
+          "根据当前世界状态和玩家最近的互动，生成1—2条新的提示卡和1条新的探索方向。",
+          "",
+          "【生成原则】",
+          "1. 新的引导必须与当前世界状态有明确关联，指向尚未展开的叙事线。",
+          "2. 绝对不要重复已有提示卡和探索方向。",
+          "3. 优先指向尚未解释的设定、已有事件的自然后果、已被提及但未深挖的人物或地点。",
+          "4. 世界还很空时基于世界种子生成；内容丰富后基于已有张力生成。",
+          "5. " + activeTone.guideDirective,
+          "",
+          "【格式】",
+          "hints 每条是 { \"label\": \"类别\", \"value\": \"简短内容，15字以内\" }。",
+          "quests 每条是一句话，20字以内。",
+          "",
+          "返回严格JSON：",
+          "{ \"hints\": [{ \"label\": \"...\", \"value\": \"...\" }], \"quests\": [\"...\"] }"
+        ].join("\n");
 
     var userPrompt = [
       "【世界种子】",
@@ -1245,14 +1470,19 @@
       var text = await callAI(systemPrompt, userPrompt, { temperature: 0.8, maxTokens: 1024, responseFormat: "json_object" });
       var result = parseJSON(text, null);
       if (result && Array.isArray(result.hints) && Array.isArray(result.quests)) {
+        var validQuests = result.quests.filter(function (q) { return typeof q === "string" && q.trim(); });
+        if (isFiction && !validQuests.length) throw new Error("虚构模式缺少构建提示");
         return {
-          hints: result.hints.filter(function (h) { return h && typeof h.label === "string" && typeof h.value === "string"; }),
-          quests: result.quests.filter(function (q) { return typeof q === "string" && q.trim(); })
+          hints: isFiction ? [] : result.hints.filter(function (h) { return h && typeof h.label === "string" && typeof h.value === "string"; }),
+          quests: validQuests.slice(0, 1)
         };
       }
       throw new Error("解析结果不符格式");
     } catch (err) {
       reportAIFailure("生成追加引导", err);
+      if (isFiction) {
+        return { hints: [], quests: fictionBuildGuides(mockKey, tone, 1, existingQuests) };
+      }
       var fallbackKey = mockKey && (MOCK_ADDITIONAL_HINTS[mockKey] || MOCK_ADDITIONAL_QUESTS[mockKey]) ? mockKey : "reality";
       return {
         hints: (MOCK_ADDITIONAL_HINTS[fallbackKey] || []).slice(0, 2),
@@ -1313,13 +1543,16 @@
     return labels[result] || result;
   }
 
+  function compactReply(value, limit) {
+    var text = String(value || "").replace(/\s+/g, " ").trim();
+    if (!text || text.length <= limit) return text;
+    var head = text.slice(0, limit);
+    var cut = Math.max(head.lastIndexOf("。"), head.lastIndexOf("！"), head.lastIndexOf("？"), head.lastIndexOf("；"));
+    if (cut >= Math.floor(limit * 0.55)) return head.slice(0, cut + 1);
+    return head.replace(/[，、；：\s]+$/, "") + "……";
+  }
+
   function worldBoundary(session) {
-    var fictionBorders = {
-      reality: "现实基底——世界遵循我们所知的物理与社会法则。异常来自心理、历史、未被解释的自然现象，而非魔法或超科技。新设定应与这一底色自洽。",
-      scifi: "科幻基底——科技可以超越当代，但每次超越都需要一个自洽的逻辑支点（即使是暗示的）。不依赖无法解释的超自然力量。",
-      fantasy: "幻想基底——世界有自身的超自然法则（魔法、神话生物、神明），这些不需要用科学解释，但需在体系内部自洽。科技形态应与这个世界的文明水平一致。",
-      psyche: "心灵基底——现实边界松动，梦境、幻觉、记忆可实体化。外部物理法则不一定适用，但内心世界的逻辑应当自洽。"
-    };
     var archaeologyBorders = {
       history: "历史基底——时代质感（器物、制度、社会关系）必须与所选时代一致。紧张感来自人的处境与选择——权力、生存、忠诚、背叛、意外、自然之力——而非超自然现象。",
       myth: "神话志怪基底——世界遵循该神话体系自身的内在法则。狐妖化人、法器通灵、因果报应是这个世界的'自然规律'，不需要科学解释，但需在该体系逻辑内自洽。",
@@ -1333,17 +1566,32 @@
     if (session.domain === "archaeology" && session.material) {
       return archaeologyBorders[session.material] || "";
     }
-    if (session.base && fictionBorders[session.base]) {
-      return fictionBorders[session.base];
+    if (session.base && FICTION_BASE_PROFILES[session.base]) {
+      var profile = FICTION_BASE_PROFILES[session.base];
+      return [
+        profile.label + "（硬边界）——" + profile.definition,
+        "构建重点：" + profile.focus,
+        "必须：" + profile.must.join("；") + "。",
+        "禁止：" + profile.forbidden.join("；") + "。"
+      ].join("\n");
     }
     return "";
   }
 
   async function processWorldInput(session, input) {
     var activeTone = toneProfile(session.tone);
+    var isFiction = session.domain === "fiction";
     var intent = inferIntent(input);
     if (intent === "meta") {
-      return { intent: intent, level: null, result: "deferred", patches: [], response: "这是一条创作讨论，我会把它留在世界事实之外。你可以继续讨论写法；只有明确发生在世界里的行动或设定，才会接受一致性检定。" };
+      return {
+        intent: intent,
+        level: null,
+        result: "deferred",
+        patches: [],
+        response: isFiction
+          ? "这是创作讨论，暂不写入世界。请把结论改写成一条明确设定，再交由书页检定。"
+          : "这是创作讨论，暂不写入世界。只有明确发生的行动或设定，才会接受检定。"
+      };
     }
 
     var level = inferLevel(input);
@@ -1376,10 +1624,12 @@
           "你是一个塔罗世界构建系统中的世界档案管理员。",
           "你只能根据已经通过检定的世界事实来回答。",
           "如果事实不足以给出完整回答，诚实说明哪些部分尚未被写定。",
-          "用中文回答，保持与这个世界一致的语调。",
-          "回答控制在100字以内。",
+          isFiction
+            ? "使用宏观、中立的世界档案口吻，不采用个人视角，不续写场景。"
+            : "保持与这个世界一致的叙事语调。",
+          "回答控制在70字以内。",
           "不要发明新的世界事实。只基于已有档案。",
-          activeTone.responseDirective,
+          isFiction ? activeTone.adjudicationDirective : activeTone.responseDirective,
           identityContext
         ].filter(Boolean).join("\n");
 
@@ -1403,18 +1653,35 @@
         ].join("\n");
 
         var qUser = "用户的问题是：" + input + "\n\n" + worldFacts;
-        var answer = await callAI(qSystem, qUser, { temperature: 0.7, maxTokens: 2048 });
-        return { intent: intent, level: null, result: "none", patches: [], response: answer };
+        var answer = await callAI(qSystem, qUser, { temperature: 0.65, maxTokens: 768 });
+        return { intent: intent, level: null, result: "none", patches: [], response: compactReply(answer, isFiction ? 72 : 84) };
       } catch (err) {
         reportAIFailure("回答世界问题", err);
         var locName = session.worldState.locations[0] && session.worldState.locations[0].name || "这个尚未定名的地方";
-        return { intent: intent, level: null, result: "none", patches: [], response: "从目前已经成立的事实看，答案仍不完整。" + locName + "的旧秩序能解释一部分迹象，但异常的来历尚未被写定；你的问题会被保留为悬而未决的线索。" };
+        return {
+          intent: intent,
+          level: null,
+          result: "none",
+          patches: [],
+          response: isFiction
+            ? "现有设定不足以判断，这一部分尚未写定。可先补充相关规则、人物或地点。"
+            : compactReply("现有线索仍不足以回答。" + locName + "能解释部分迹象，但关键联系尚未显现。", 84)
+        };
       }
     }
 
     // world_action: 先用规则引擎做意图/等级/冲突检测
     if (contradiction && !/(改为|修订|不再|从此)/.test(input)) {
-      return { intent: intent, level: level, result: "conflict", patches: [], response: "这与已经成立的「" + contradiction.text + "」相抵触，我暂时没有把它写入世界。你可以说明这是例外、误传，还是要正式修订旧设定。" };
+      return {
+        intent: intent,
+        level: level,
+        result: "conflict",
+        patches: [],
+        response: compactReply(
+          "这与已成立的「" + contradiction.text + "」冲突，暂未写入。可将它设为例外、误传，或明确修订旧设定。",
+          isFiction ? 72 : 88
+        )
+      };
     }
 
     try {
@@ -1438,12 +1705,22 @@
       }
 
       var borderHint = worldBoundary(session);
+      var fictionAdjudication = isFiction ? [
+        "【虚构模式 — 宏观设定裁决】",
+        "· 把用户内容视为对世界的设定提案，而不是玩家角色的行动。",
+        "· 如果输入带有“【切面｜关键词】补完一条设定”之类的构建提示，只提取玩家真正补写的世界事实；不要把提示语本身写入档案。",
+        "· 回应使用宏观、中立、简洁的书页裁决口吻，不使用“你看见”“你来到”等个人叙事。",
+        "· 首句说明设定是否成立及写入层级；第二句只指出一项结构性影响、例外或尚待补全处。",
+        "· 不替玩家续写剧情，不擅自补充新事实。",
+        "· " + activeTone.adjudicationDirective
+      ].join("\n") : "";
 
       var aSystem = [
         "你是一个塔罗世界构建系统中的世界检定官。",
-        "用户写下一段关于世界的行动或设定。你需要：",
+        isFiction ? "用户提出一条关于虚构世界的设定。你需要：" : "用户写下一段关于世界的行动或设定。你需要：",
         "",
-        borderHint ? "类型边界（软约束——不禁止，但请留意）：" + borderHint : "",
+        borderHint ? "世界基底（硬约束——越界内容必须标记 conflict）：" + borderHint : "",
+        fictionAdjudication,
         "",
         "1. 判断内容的层级：",
         "   L1 = 世界观或底层公理（影响整个世界/所有人/永远）",
@@ -1466,7 +1743,9 @@
         "   · entities：用户输入中提到的人物名（数组，没有则为空数组）",
         "   · location：用户输入中提到的具体地点名（字符串，没有则为空字符串）",
         "   · relationships：用户输入中明确描述的人物关系（数组，每项包含 from、to、type；没有则为空数组）",
-        "6. 返回一段 40—80 字的中文回应。" + activeTone.responseDirective,
+        isFiction
+          ? "6. 返回一段35—65字的中文裁决回应。"
+          : "6. 返回一段40—80字的中文回应。" + activeTone.responseDirective,
         identityContext2,
         "",
         "返回严格JSON：",
@@ -1495,7 +1774,7 @@
       ].join("\n");
 
       var aUser = "用户输入：" + input + "\n\n" + existingState;
-      var aText = await callAI(aSystem, aUser, { temperature: 0.65, maxTokens: 2048, responseFormat: "json_object" });
+      var aText = await callAI(aSystem, aUser, { temperature: isFiction ? 0.5 : 0.65, maxTokens: 1024, responseFormat: "json_object" });
       var aiResult = parseJSON(aText, { level: level, result: "added", response: "" });
 
       var finalLevel = aiResult.level || level;
@@ -1557,9 +1836,20 @@
         L2: "这条运行规则已经进入档案。世界接受了它，接下来的人与事也会受到它的约束。",
         L3: "这件事已经发生。它改变了眼前的局部状态，也为之后的行动留下了可以继续追索的痕迹。"
       };
-      var finalResponse = aiResult.response || (responses[finalLevel] + "（" + resultLabel(finalResult) + "）");
+      var fictionResponses = {
+        L1: "设定成立，已写入L1底层公理。它将约束此后所有规则与例外。",
+        L2: "设定成立，已写入L2运行规则。它会持续影响制度、群体与日常选择。",
+        L3: "设定成立，已写入L3世界事实。它补充了一个可继续发展的局部。"
+      };
+      var finalResponse = aiResult.response || ((isFiction ? fictionResponses[finalLevel] : responses[finalLevel]) + "（" + resultLabel(finalResult) + "）");
 
-      return { intent: intent, level: finalLevel, result: finalResult, patches: patches, response: finalResponse };
+      return {
+        intent: intent,
+        level: finalLevel,
+        result: finalResult,
+        patches: patches,
+        response: compactReply(finalResponse, isFiction ? 72 : 92)
+      };
     } catch (err) {
       reportAIFailure("处理世界输入", err);
       // 回退纯规则引擎
@@ -1591,7 +1881,18 @@
         L2: "这条运行规则已经进入档案。世界接受了它，接下来的人与事也会受到它的约束。",
         L3: "这件事已经发生。它改变了眼前的局部状态，也为之后的行动留下了可以继续追索的痕迹。"
       };
-      return { intent: intent, level: level, result: result2, patches: patches2, response: resp2[level] + "（" + resultLabel(result2) + "）" };
+      var fictionResp2 = {
+        L1: "设定已写入L1底层公理；后续规则都需服从它。",
+        L2: "设定已写入L2运行规则；它将持续约束世界运转。",
+        L3: "设定已写入L3世界事实；相关人物、地点或事件已更新。"
+      };
+      return {
+        intent: intent,
+        level: level,
+        result: result2,
+        patches: patches2,
+        response: compactReply((isFiction ? fictionResp2[level] : resp2[level]) + "（" + resultLabel(result2) + "）", isFiction ? 72 : 92)
+      };
     }
   }
 
@@ -1633,6 +1934,7 @@
   /* ====== 5. 生成回响 ====== */
   async function generateEcho(session, startIndex, endIndex) {
     var activeTone = toneProfile(session.tone);
+    var isFiction = session.domain === "fiction";
     var records = session.interactionLog.slice(startIndex, endIndex + 1)
       .filter(function (item) {
         return item.intent === "world_action" && ["conflict", "deferred"].indexOf(item.result) === -1 && !item.retracted;
@@ -1643,15 +1945,23 @@
 
     try {
       var systemPrompt = [
-        "你是一个塔罗世界构建系统中的叙事编纂者。",
-        "将最近已经通过检定的世界事件，改写为一段连贯、有因果和氛围的叙事文本。",
+        isFiction
+          ? "你是一个虚构世界设定编纂者。"
+          : "你是一个塔罗世界构建系统中的叙事编纂者。",
+        isFiction
+          ? "将最近通过检定的设定整理为一段连贯的世界演化记录。"
+          : "将最近已经通过检定的世界事件，改写为一段连贯、有因果和氛围的叙事文本。",
         "",
         "要求：",
-        "1. 这不是事实列表，也不是普通摘要，而是正式故事。",
-        "2. 以文学化但不浮夸的中文书写。" + activeTone.storyDirective,
+        isFiction
+          ? "1. 使用宏观、克制的世界档案口吻，不采用个人视角，不续写玩家没有设定的剧情。"
+          : "1. 这不是事实列表，也不是普通摘要，而是正式故事。",
+        isFiction
+          ? "2. 重点呈现规则之间的因果、影响范围与仍未闭合的空白。" + activeTone.adjudicationDirective
+          : "2. 以文学化但不浮夸的中文书写。" + activeTone.storyDirective,
         "3. 保留世界名称、地点名和人物的原名。",
-        "4. 将分散的世界行动串成有因果的叙事。",
-        "5. 控制在150—250字。",
+        isFiction ? "4. 将分散设定整理成有因果的世界结构。" : "4. 将分散的世界行动串成有因果的叙事。",
+        isFiction ? "5. 控制在100—160字。" : "5. 控制在150—220字。",
         "6. 不添加用户没有写过的全新事件。",
         "",
         "返回JSON：",

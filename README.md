@@ -1,20 +1,55 @@
-# 白日幻想
+# 白日幻想 · Daydream — 独立部署版
 
-面向抖音互动空间的单人塔罗世界构建体验。用户通过气质、世界来源、一级母题、自由表达与二级联想词生成世界种子，并在书页式交互界面中持续补充故事、人物、关系、地点与世界设定。
+基于 DeepSeek API 的独立部署版本，可托管于 GitHub Pages。
 
-## 项目结构
+## 部署到 GitHub Pages
 
-- `index.html`：应用入口
-- `styles.css`：页面布局、动画与视觉样式
-- `themes.js`：一级母题与主题抽取逻辑
-- `ai-service.js`：AI 请求、世界种子、关系抽取和故事交互
-- `app.js`：页面状态、交互流程、存档与渲染
-- `素材/`：书籍、背景、按钮等视觉资源
+### 1. 获取 DeepSeek API Key
 
-## 本地运行
+在 [DeepSeek 开放平台](https://platform.deepseek.com/) 获取 API Key。
 
-这是一个零构建的静态网页项目。可直接打开 `index.html`，或在项目目录启动任意静态文件服务器。
+### 2. 创建 GitHub 仓库
 
-## 发布说明
+将本目录推送为一个新的 GitHub 仓库。
 
-当前仓库用于私有开发备份。正式提交抖音互动空间前，需要按平台方案统一迁移和配置 AI API key。
+### 3. 设置 Secret
+
+GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret：
+
+- **Name**: `DEEPSEEK_API_KEY`
+- **Value**: 你的 DeepSeek API Key（如 `sk-xxxxxxxx`）
+
+### 4. 启用 GitHub Pages
+
+Settings → Pages → Source: **GitHub Actions**
+
+### 5. 推送代码
+
+```bash
+git init
+git add .
+git commit -m "Initial standalone deploy"
+git branch -M main
+git remote add origin <你的仓库地址>
+git push -u origin main
+```
+
+推送后 Actions 自动部署。部署 URL 在 Settings → Pages 页面查看。
+
+## 本地开发
+
+将 `ai-service.js` 中的 `__DEEPSEEK_API_KEY__` 替换为实际 Key：
+
+```javascript
+apiKey: "sk-your-actual-key",
+```
+
+⚠️ 不要提交含真实 Key 的代码。
+
+## 与互动空间版的区别
+
+| 功能 | 互动空间版 | 独立部署版 |
+|---|---|---|
+| AI 调用 | `tt.callAIChatCompletion` | `fetch()` 直连 DeepSeek |
+| API Key | 平台后台配置 | GitHub Secret → 构建时注入 |
+| 模型 | doubao-seed-2-0-pro-260215 | deepseek-v4-pro |

@@ -31,7 +31,7 @@
     echoes: [],
     archiveQueries: { settings: [], timeline: [], characters: [], locations: [] },
     activeView: "story",
-    showFullLog: false,
+    showFullLog: true,
     storyStartedAt: "",
     restored: false,
     revealedGuideCount: 0,
@@ -51,18 +51,13 @@
     person:     { name: "人物",     mark: "人", desc: "进入一个人的感知世界",              hints: ["书信","日记","作品"] }
   };
   const BASES = {
-    reality: { name: "现实世界", mark: "现", description: "日常秩序里的微小裂缝", hints: ["人情", "制度", "选择"] },
-    scifi: { name: "科幻世界", mark: "寂", description: "技术边界之外的未知", hints: ["星际", "机械", "意识"] },
-    fantasy: { name: "幻想世界", mark: "幻", description: "誓言与异象共同生长", hints: ["魔法", "传说", "法则"] },
-    psyche: { name: "心灵世界", mark: "心", description: "内在感受化为真实空间", hints: ["梦境", "回声", "象征"] }
+    reality: { name: "现实世界", mark: "现", description: "改变一个现实变量，推演连锁后果", hints: ["现实条件", "变量", "因果"] },
+    scifi: { name: "科幻世界", mark: "寂", description: "从技术支点搭建文明系统", hints: ["技术", "系统", "限制"] },
+    fantasy: { name: "幻想世界", mark: "幻", description: "创造魔法、异族与鲜活法则", hints: ["魔法", "异族", "创造"] },
+    psyche: { name: "心灵世界", mark: "心", description: "让情绪、记忆与潜意识具象化", hints: ["情绪", "记忆", "潜意识"] }
   };
-  const BASE_TAROT_ART = {
-    reality: "素材/figma-tarot/reality-card.png",
-    scifi: "素材/figma-tarot/scifi-card.png",
-    fantasy: "素材/figma-tarot/fantasy-card.png",
-    psyche: "素材/figma-tarot/psyche-card.png"
-  };
-  const LIGHT_TAROT_ART = "素材/figma-tarot/light-card.png";
+  const TAROT_CARD_DARK = "素材/figma-tarot/card.png";
+  const TAROT_CARD_LIGHT = "素材/figma-tarot/card-light.png";
   const PRIMARY_SPREADS = {
     reality: {
       name: "因果牌阵",
@@ -114,11 +109,11 @@
     }
   };
   const VIEWS = {
-    story: { name: "羽毛书", icon: "⌁" },
+    story: { name: "故事", icon: "⌁" },
     settings: { name: "设定", icon: "◇" },
-    timeline: { name: "时间线", icon: "╱" },
+    timeline: { name: "事件", icon: "╱" },
     characters: { name: "人物", icon: "♙" },
-    locations: { name: "空间", icon: "⌖" }
+    locations: { name: "地点", icon: "⌖" }
   };
 
   /* ====== Falling Words Pool (120 subconscious words) ====== */
@@ -145,6 +140,7 @@
 
   let state = load();
   let busy = false;
+  let composerWaitingLabel = "";
   let isRecording = false;
   let transitionCooldownUntil = 0;   // 交互游戏结束后短暂屏蔽点击，防止误触
   let seedExtractionRun = 0;
@@ -269,9 +265,10 @@
 
   window.addEventListener("tarot-ai-error", function (event) {
     var detail = event.detail || {};
-    var operation = detail.operation || "AI 调用";
-    var message = detail.message || "未知错误";
-    showToast(operation + "失败，已使用本地回退：" + message.slice(0, 72));
+    // 调试期间显示详细错误，方便定位问题
+    var msg = detail.fullMessage || detail.message || "未知错误";
+    showToast("AI未接通: " + msg);
+    console.warn("AI错误详情:", JSON.stringify(detail));
   });
 
   function stepIndex() {
@@ -341,8 +338,8 @@
     } else {
       archivesHtml = '<div class="home-archive-empty">' +
         '<span>✦</span>' +
-        '<strong>尚未留下世界</strong>' +
-        '<p>完成一次白日幻想后，它会被写在这里。</p>' +
+        '<strong>还没有保存的世界</strong>' +
+        '<p>完成并保存一个世界后，它会出现在这里。</p>' +
       '</div>';
     }
     return '<section class="dream-home is-' + tone + '" data-home-tone="' + tone + '">' +
@@ -351,24 +348,27 @@
         '<img class="home-wizard home-wizard-dark" src="素材/figma-expression/wizard-background.png" alt="">' +
         '<span class="home-paper-grade"></span>' +
       '</div>' +
-      '<div class="home-tone-picker" aria-label="选择世界气质">' +
-        '<span class="home-tone-label home-tone-light"><strong>光明</strong><small>可能性 · 修复</small></span>' +
+      '<div class="home-tone-picker" aria-label="选择世界基调">' +
+        '<span class="home-tone-label home-tone-light"><strong>光明</strong><small>希望 · 修复</small></span>' +
         '<button class="home-tone-switch" data-action="toggle-home-tone" type="button" ' +
-          'aria-label="切换光明与黑暗" aria-pressed="' + (tone === "dark" ? "true" : "false") + '">' +
+          'aria-label="切换世界基调" aria-pressed="' + (tone === "dark" ? "true" : "false") + '">' +
           '<span class="home-tone-track" aria-hidden="true">' +
             '<img class="home-tone-image home-tone-image-light" src="素材/home-tone-light.png" alt="">' +
             '<img class="home-tone-image home-tone-image-dark" src="素材/home-tone-dark.png" alt="">' +
           '</span>' +
         '</button>' +
-        '<span class="home-tone-label home-tone-dark"><strong>黑暗</strong><small>代价 · 禁忌</small></span>' +
+        '<span class="home-tone-label home-tone-dark"><strong>黑暗</strong><small>冲突 · 代价</small></span>' +
       '</div>' +
       '<div class="home-dream-entry" aria-label="入梦动画">' +
-        '<video class="home-dream-video" muted playsinline preload="auto">' +
-          '<source src="素材/开场入梦动画.mp4" type="video/mp4">' +
-        '</video>' +
-        '<button class="home-dream-trigger" data-action="play-dream" type="button" aria-label="播放动画并进入世界">' +
-          '<span class="home-play-triangle" aria-hidden="true"></span>' +
-        '</button>' +
+        '<img class="home-dream-gif" src="素材/开场入梦动画.gif" alt="">' +
+        '<div class="home-dream-shield" aria-hidden="true"></div>' +
+        '<div class="home-dream-mandala" data-action="hold-dream" role="button" aria-label="长按进入">' +
+          '<span class="mandala-core"></span>' +
+          '<span class="mandala-ring mandala-ring-1"></span>' +
+          '<span class="mandala-ring mandala-ring-2"></span>' +
+          '<span class="mandala-ring mandala-ring-3"></span>' +
+          '<span class="mandala-hint">长按进入</span>' +
+        '</div>' +
       '</div>' +
       '<div class="home-dream-caption" aria-label="白日幻想 Dreaming World">' +
         '<strong>白 日 幻 想</strong>' +
@@ -385,14 +385,27 @@
           '<span></span>' +
         '</button>' +
         '<header>' +
-          '<small>WORLD ARCHIVES</small>' +
-          '<h2>世界的存档</h2>' +
-          '<p>羽毛记得你曾经抵达的地方。</p>' +
+          '<h2>世界存档</h2>' +
         '</header>' +
         archivesHtml +
       '</aside>' +
       '<div class="safe-area" aria-hidden="true"></div>' +
     '</section>';
+  }
+
+  function isFictionWorld() {
+    return state.domain === "fiction";
+  }
+
+  function storyComposerPlaceholder() {
+    return isFictionWorld()
+      ? "写下一条世界设定、规则或关系……"
+      : "写下行动、设定，或提出问题……";
+  }
+
+  function defaultComposerWaitingLabel() {
+    if (state.activeView !== "story") return "正在查询";
+    return isFictionWorld() ? "正在检查这条设定" : "正在生成回应";
   }
 
   function renderDomain() {
@@ -403,8 +416,8 @@
             '<img src="素材/domain-existing-transparent.png" alt="" aria-hidden="true">' +
           '</span>' +
           '<span class="domain-portal-copy">' +
-            '<strong>现存</strong>' +
-            '<small>你有一双藏在历史中的眼睛——通过交互，逐渐发现自己是谁。</small>' +
+            '<strong>已有世界</strong>' +
+            '<small>从历史、作品、人物或事件中选择起点，探索其中的故事。</small>' +
           '</span>' +
         '</button>' +
         '<button class="domain-portal domain-fiction" data-action="choose-domain" data-value="fiction">' +
@@ -412,8 +425,8 @@
             '<img src="素材/domain-fiction-transparent.png" alt="" aria-hidden="true">' +
           '</span>' +
           '<span class="domain-portal-copy">' +
-            '<strong>虚构</strong>' +
-            '<small>一切从零开始——你将写下这个世界的第一条记录。</small>' +
+            '<strong>新建世界</strong>' +
+            '<small>从零开始，<br>写下世界设定。</small>' +
           '</span>' +
         '</button>' +
       '</div>',
@@ -450,13 +463,13 @@
             var flipTheme = state.primaryThemes[ft];
             inlineThemes += '<button class="flip-theme-option" role="listitem" ' +
               'data-action="choose-primary" data-id="' + flipTheme.id + '" data-name="' + esc(flipTheme.name) + '" ' +
-              'aria-label="选择母题' + esc(flipTheme.name) + '">' +
+              'aria-label="选择探索方向：' + esc(flipTheme.name) + '">' +
               '<span class="flip-theme-index">0' + (ft + 1) + '</span>' +
               '<strong>' + esc(flipTheme.name) + '</strong>' +
             '</button>';
           }
           materialCards += '<div class="material-illustration-card material-inline-flip selected" role="listitem" ' +
-            'aria-label="' + esc(m.name) + '的五个一级母题">' +
+            'aria-label="' + esc(m.name) + '的五个探索方向">' +
               '<div class="material-inline-stage">' +
                 '<div class="material-inline-face material-inline-front">' +
                   '<img src="' + materialAssets[mid] + '" alt="" aria-hidden="true">' +
@@ -467,7 +480,7 @@
                 '<div class="material-inline-face material-inline-back">' +
                   '<button class="material-inline-close" data-action="close-material-flip" aria-label="翻回' + esc(m.name) + '图面">↶</button>' +
                   '<span class="material-flip-kicker">' + esc(m.name) + '</span>' +
-                  '<div class="material-flip-themes" role="list" aria-label="选择一级母题">' + inlineThemes + '</div>' +
+                  '<div class="material-flip-themes" role="list" aria-label="选择一个探索方向">' + inlineThemes + '</div>' +
                 '</div>' +
               '</div>' +
             '</div>';
@@ -482,9 +495,19 @@
         }
       }
       var selectedMaterial = MATERIALS[state.selectedMaterialPreview];
+      var archaeologyGuideTitle = selectedMaterial
+        ? "选择一个你想探索的方向"
+        : "选择一个你想进入的世界";
+      var archaeologyGuideCopy = selectedMaterial
+        ? "你的选择将决定「" + selectedMaterial.name + "」从哪里展开。"
+        : "从历史、作品、人物或事件中选择一个起点。";
       return onboardingShell(
         '<div class="archaeology-base-screen">' +
-          '<div class="material-illustration-grid' + (selectedMaterial ? ' has-selection' : '') + '" role="list" aria-label="选择叙事矿脉">' + materialCards + '</div>' +
+          '<div class="archaeology-base-guide">' +
+            '<h1>' + archaeologyGuideTitle + '</h1>' +
+            '<p>' + archaeologyGuideCopy + '</p>' +
+          '</div>' +
+          '<div class="material-illustration-grid' + (selectedMaterial ? ' has-selection' : '') + '" role="list" aria-label="可选择的已有世界">' + materialCards + '</div>' +
         '</div>',
         {
           wide: true,
@@ -515,8 +538,8 @@
     return onboardingShell(
       '<div class="base-portal-screen">' +
         '<div class="base-portal-heading">' +
-          '<p>旅人，<em>词汇</em>将指引你前往你想去的</p>' +
-          '<h1>故事世界</h1>' +
+          '<h1>选择一种世界基底</h1>' +
+          '<p>它将决定世界的基本规则与后续内容。</p>' +
         '</div>' +
         '<div class="base-portal-grid" role="list" aria-label="选择世界基底">' + cards + '</div>' +
       '</div>',
@@ -531,7 +554,7 @@
   function renderPrimary() {
     var spread = state.domain === "fiction" ? PRIMARY_SPREADS[state.base] : null;
     var tarotArt = spread
-      ? (state.tone === "light" ? LIGHT_TAROT_ART : BASE_TAROT_ART[state.base])
+      ? (state.tone === "light" ? TAROT_CARD_LIGHT : TAROT_CARD_DARK)
       : "";
     var cards = "";
     for (var i = 0; i < state.primaryThemes.length; i++) {
@@ -542,7 +565,7 @@
           ' data-position-label="' + esc(position.label) + '"' +
           ' data-position-meaning="' + esc(position.meaning) + '"'
         : "";
-      var ariaLabel = "选择母题" + theme.name;
+      var ariaLabel = "选择主题：" + theme.name;
       var artHtml = tarotArt
         ? '<img class="theme-card-art" src="' + tarotArt + '" alt="" aria-hidden="true">'
         : "";
@@ -556,24 +579,21 @@
       '</button>';
     }
     var toneLabel = state.tone === "light" ? "光明" : "黑暗";
-    var domainHint = state.domain === "archaeology" && state.material ? "现存·" + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
-    var spreadName = spread ? spread.name : "抽取一级母题";
-    var spreadQuestion = spread ? spread.question : "五张牌，哪一张先叫住了你？";
+    var domainHint = state.domain === "archaeology" && state.material ? "已有世界 · " + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
     var layoutClass = spread ? " spread-" + spread.layout : " spread-archive";
     return onboardingShell(
       '<div class="tarot-draw-screen">' +
       '<div class="tarot-draw-heading">' +
-        '<span class="eyebrow">04 · ' + esc(spreadName) + '</span>' +
-        '<h1>五张牌，哪一张<br>先叫住了你？</h1>' +
-        '<p>' + esc(spreadQuestion) + '<br>' + toneLabel + ' · ' + esc(domainHint) + ' 已改变了牌阵的概率。</p>' +
+        '<h1>抽卡确定世界核心议题</h1>' +
+        '<p>已根据「' + toneLabel + ' · ' + esc(domainHint) + '」生成；你可以更换一次。</p>' +
       '</div>' +
-      '<div class="tarot-spread tarot-draw-spread" role="list" aria-label="本轮五个一级母题">' + cards + '</div>' +
+      '<div class="tarot-spread tarot-draw-spread" role="list" aria-label="五个可选主题">' + cards + '</div>' +
       '<div class="spread-actions tarot-draw-actions">' +
         '<button class="text-button" data-action="refresh-themes"' + (state.themeRefreshUsed ? " disabled" : "") + '>' +
           '<span>↻</span> ' + (state.themeRefreshUsed ? "已经换过一组" : "换一组 · 仅一次") +
         '</button>' +
       '</div>' +
-      '<p class="whisper tarot-draw-whisper">同一牌阵不会出现重复或高度相近的母题。</p>' +
+      '<p class="whisper tarot-draw-whisper">每张牌代表一个不同的故事方向。</p>' +
       '</div>',
       {
         wide: true,
@@ -586,19 +606,20 @@
   function renderExpression() {
     return onboardingShell(
       '<div class="expression-figma-screen">' +
-        '<div class="selected-theme-orb" aria-label="已选择母题：' + esc(state.selectedPrimaryTheme) + '">' +
+        '<div class="selected-theme-orb" aria-label="世界母题：' + esc(state.selectedPrimaryTheme) + '">' +
           '<span>世界母题</span>' +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
         '<form class="ritual-form expression-ritual-form" data-form="expression">' +
           '<div class="ornate-textarea expression-textarea">' +
           '<textarea id="expression-input" maxlength="280" required ' +
-            'placeholder="写下一个问题、想法或感受……" ' +
-            'aria-label="写下一个问题、想法或感受">' + esc(state.userExpression) + '</textarea>' +
+            'placeholder="写下关于世界的问题、设定、感受、希望探索的方向等" ' +
+            'aria-label="写下关于世界的问题、设定、感受、希望探索的方向等">' + esc(state.userExpression) + '</textarea>' +
           '</div>' +
           '<div class="char-count"><span data-count>' + state.userExpression.length + '</span> / 280</div>' +
-          '<button class="seal-cta expression-submit" type="submit" aria-label="交给世界">' +
+          '<button class="seal-cta expression-submit" type="submit" aria-label="继续">' +
             '<img src="素材/figma-expression/submit-button.png" alt="" aria-hidden="true">' +
+            '<span class="expression-submit-label">继续</span>' +
           '</button>' +
         '</form>' +
       '</div>',
@@ -615,23 +636,20 @@
     for (var i = 0; i < state.secondaryThemes.length; i++) {
       var theme = state.secondaryThemes[i];
       words += '<button class="word-choice word-' + (i + 1) + '" role="listitem" ' +
-        'data-action="choose-secondary" data-value="' + esc(theme) + '">' +
+        'data-action="choose-secondary" data-value="' + esc(theme) + '" aria-label="选择方向：' + esc(theme) + '">' +
         '<span>' + esc(theme) + '</span>' +
         '<small>0' + (i + 1) + '</small>' +
       '</button>';
     }
     return onboardingShell(
       '<div class="secondary-ritual-screen">' +
-        '<div class="secondary-theme-core" aria-label="世界母题：' + esc(state.selectedPrimaryTheme) + '">' +
-          '<span>世界母题</span>' +
+        '<div class="secondary-theme-core" aria-label="已选主题：' + esc(state.selectedPrimaryTheme) + '">' +
+          '<span>已选主题</span>' +
           '<strong>' + esc(state.selectedPrimaryTheme) + '</strong>' +
         '</div>' +
-        '<div class="word-orbit" role="list">' + words + '</div>' +
+        '<div class="word-orbit" role="list" aria-label="五个可选方向">' + words + '</div>' +
         '<div class="secondary-ritual-copy">' +
-          '<span class="eyebrow">06 · 二级联想</span>' +
-          '<div class="expression-quote">"' + esc(state.userExpression) + '"</div>' +
-          '<h1>哪一个词，更接近你想继续探索的方向？</h1>' +
-          '<p>这些词只向外打开方向，不替你解释原来的表达。</p>' +
+          '<h1>选择一个词，确定故事的生成方向</h1>' +
         '</div>' +
       '</div>',
       {
@@ -648,15 +666,15 @@
     var total = state.worldSeeds.length;
     var idx = state.activeSeedIndex;
     var seed = state.worldSeed;
-    var roundLabel = total > 1 ? "第 " + (idx + 1) + " / " + total + " 颗种子" : "";
+    var roundLabel = total > 1 ? "方案 " + (idx + 1) + " / " + total : "";
 
     // 种子导航
     var navHtml = "";
     if (total > 1) {
       navHtml = '<div class="seed-nav">' +
-        '<button data-action="seed-prev" aria-label="上一颗种子"' + (idx <= 0 || busy ? " disabled" : "") + '>‹</button>' +
+        '<button data-action="seed-prev" aria-label="上一个方案"' + (idx <= 0 || busy ? " disabled" : "") + '>‹</button>' +
         '<span>' + roundLabel + '</span>' +
-        '<button data-action="seed-next" aria-label="下一颗种子"' + (idx >= total - 1 || busy ? " disabled" : "") + '>›</button>' +
+        '<button data-action="seed-next" aria-label="下一个方案"' + (idx >= total - 1 || busy ? " disabled" : "") + '>›</button>' +
       '</div>';
     }
 
@@ -664,22 +682,20 @@
     var actionsHtml = "";
     if (total >= MAX_ROUNDS) {
       actionsHtml = '<div class="seed-actions">' +
-        '<p class="seed-exhausted">这里没有你想去的世界<br>你需要自己构建</p>' +
+        '<p class="seed-exhausted">已达到本轮生成上限<br>请从已有方案中选择</p>' +
       '</div>';
     } else {
       var remaining = MAX_ROUNDS - total;
       actionsHtml = '<div class="seed-actions">' +
         '<button class="text-button" data-action="retry-secondary"' + (busy ? " disabled" : "") + '>' +
-          '<span>↻</span> 不满意，再抽一批方向词（还剩 ' + remaining + ' 次）' +
+          '<span>↻</span> 换一个方向，再生成方案（还可尝试 ' + remaining + ' 次）' +
         '</button>' +
       '</div>';
     }
 
-    var domainLabel = state.domain === "archaeology" && state.material ? "现存·" + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
+    var domainLabel = state.domain === "archaeology" && state.material ? "已有世界 · " + MATERIALS[state.material].name : (BASES[state.base] ? BASES[state.base].name : "");
     return onboardingShell(
       '<div class="step-heading compact center seed-heading">' +
-        '<span class="eyebrow">07 · 世界种子' + (total > 0 ? ' · 第 ' + (idx + 1) + ' 颗' : '') + '</span>' +
-        '<h1>一个不完整的世界<br>正在等你进入</h1>' +
         '<div class="seed-meta"><span>' + (state.tone === "light" ? "光明" : "黑暗") + '</span>' +
           '<i>×</i><span>' + esc(domainLabel) + '</span>' +
           '<i>×</i><span>' + esc(state.selectedPrimaryTheme) + '</span>' +
@@ -687,15 +703,15 @@
       '</div>' +
       navHtml +
       '<article class="seed-card">' +
-        '<span class="seed-number">WORLD SEED · ' + String(idx + 1).padStart(3, "0") + '</span>' +
+        '<span class="seed-number">方案 · ' + String(idx + 1).padStart(3, "0") + '</span>' +
         '<h2>' + esc(seed.title) + '</h2>' +
         '<div class="seed-divider"><span>✦</span></div>' +
         '<p>' + highlightTerms(esc(seed.body)) + '</p>' +
-        '<footer>人物、原因、历史与法则仍留有空缺</footer>' +
+        '<footer>进入后可继续补充人物、事件和规则</footer>' +
       '</article>' +
       actionsHtml +
       '<button class="enter-world" data-action="enter-world">' +
-        '<span><small>确认这颗种子</small>送入世界</span>' +
+        '<span>进入世界</span>' +
         '<b>→</b>' +
       '</button>',
       { wide: true }
@@ -739,21 +755,27 @@
 
   /* ====== 世界模式等待态：不冻结 UI，仅禁用作曲家 ====== */
   function setComposerWaiting(waiting, label) {
+    composerWaitingLabel = waiting ? (label || defaultComposerWaitingLabel()) : "";
     var composer = document.querySelector(".composer");
     if (!composer) return;
     var textarea = composer.querySelector("textarea");
     var sendBtn = composer.querySelector(".send-button");
     var voiceBtn = composer.querySelector(".voice-button");
+    var indicator = composer.querySelector(".ai-waiting-indicator");
+    var indicatorText = composer.querySelector(".ai-waiting-text");
 
     if (waiting) {
-      if (textarea) { textarea.disabled = true; textarea.placeholder = label || "世界正在回应……"; }
+      if (textarea) { textarea.disabled = true; textarea.placeholder = composerWaitingLabel + "……"; }
       if (sendBtn) sendBtn.disabled = true;
       if (voiceBtn) voiceBtn.disabled = true;
+      if (indicatorText) indicatorText.textContent = composerWaitingLabel;
+      if (indicator) indicator.setAttribute("aria-hidden", "false");
       composer.classList.add("composer-waiting");
     } else {
-      if (textarea) { textarea.disabled = false; textarea.placeholder = state.activeView === "story" ? "在世界中行动、设定或发问……" : "向" + (VIEWS[state.activeView] ? VIEWS[state.activeView].name : "") + "档案查询……"; }
+      if (textarea) { textarea.disabled = false; textarea.placeholder = state.activeView === "story" ? storyComposerPlaceholder() : "向" + (VIEWS[state.activeView] ? VIEWS[state.activeView].name : "") + "档案查询……"; }
       if (sendBtn) sendBtn.disabled = false;
       if (voiceBtn) voiceBtn.disabled = false;
+      if (indicator) indicator.setAttribute("aria-hidden", "true");
       composer.classList.remove("composer-waiting");
     }
   }
@@ -762,6 +784,7 @@
   function playChakraMeditation(aiPromise) {
     return new Promise(function (resolve) {
       var MIN_PICK = 5;               // 至少采撷 5 个
+      var MAX_TIME = 15000;           // 15s 超时自动放行
       var PEAK_START = 0.44;          // 峰窗起点（scale ≈ 0.98）
       var PEAK_END = 0.56;            // 峰窗终点（scale ≈ 0.98）
 
@@ -781,6 +804,7 @@
       var missTimer = null;
       var phase = 0;                  // 当前活跃偏旁的脉冲相位 0→1
       var activeIdx = -1;             // 当前活跃偏旁的索引
+      var totalElapsed = 0;           // 累计时间，用于超时放行
 
       aiPromise.then(function () { aiReady = true; }, function () { aiReady = true; });
 
@@ -854,11 +878,10 @@
 
       app.innerHTML = onboardingShell(
         '<div class="chakra-meditation">' +
-          '<p class="chakra-title">偏旁正在凝聚成世界</p>' +
           '<div class="chakra-stage seed-stage" id="cs">' +
             wordsHtml +
           '</div>' +
-          '<p class="chakra-sub" id="csub">偏旁起伏时，在最佳时刻轻触</p>' +
+          '<p class="chakra-sub" id="csub">成功点亮 5 个字符后，世界将继续生成。</p>' +
           '<div class="stream-preview" id="csp" aria-live="polite">' +
             '<p class="sp-text" id="cspt"></p>' +
           '</div>' +
@@ -932,7 +955,7 @@
         completed++;
         activateNext();
         if (activeIdx >= 0) {
-          sub.textContent = "第 " + completed + " 个偏旁已采撷 · 继续等待";
+          sub.textContent = "已点亮 " + completed + " 个字符 · 继续等待";
         }
         tryFinish();
       }
@@ -948,12 +971,21 @@
 
       function tryFinish() {
         if (fired) return;
+        // 超时放行：即使没玩够，时间到了也过
+        if (totalElapsed > MAX_TIME) {
+          fired = true;
+          transitionCooldownUntil = Date.now() + 400;
+          cancelAnimationFrame(raf);
+          sub.textContent = aiReady ? "世界已生成" : "时间到，等待内容……";
+          setTimeout(resolve, 500);
+          return;
+        }
         if (!aiReady || completed < MIN_PICK) return;
-        if (!allIgnited()) return;
+        // AI 已就绪且已点亮足够数量 → 直接通过，不强制全部点亮
         fired = true;
         transitionCooldownUntil = Date.now() + 400;
         cancelAnimationFrame(raf);
-        sub.textContent = "世界已经成形……";
+        sub.textContent = "世界已生成";
         setTimeout(resolve, 500);
       }
 
@@ -962,6 +994,8 @@
         if (fired) return;
         var dt = Math.min(100, now - last);
         last = now;
+        totalElapsed += dt;
+        tryFinish();
 
         if (activeIdx >= 0) {
           var wd2 = wordData[activeIdx];
@@ -969,9 +1003,9 @@
           if (phase >= 1) {
             phase = 0;
             clearTimeout(missTimer);
-            sub.textContent = "尚未到时机 · 等偏旁再次浮现";
+            sub.textContent = "还没到时机，请在字符最大时轻触";
             missTimer = setTimeout(function () {
-              if (!fired && activeIdx >= 0) sub.textContent = "偏旁起伏时，在最佳时刻轻触";
+              if (!fired && activeIdx >= 0) sub.textContent = "在字符放大到最大时轻触";
             }, 900);
           }
           updateWordVisual(activeIdx, phase);
@@ -988,7 +1022,7 @@
         if (aiReady && !stage.classList.contains("ai-ready")) {
           stage.classList.add("ai-ready");
           if (activeIdx >= 0) {
-            sub.textContent = "世界已在等待 · 采撷偏旁";
+            sub.textContent = "内容已准备好 · 继续点亮字符";
           }
         }
 
@@ -1005,9 +1039,9 @@
           clearTimeout(missTimer);
         } else {
           clearTimeout(missTimer);
-          sub.textContent = "尚未到时机 · 等偏旁再次浮现";
+          sub.textContent = "还没到时机，请在字符最大时轻触";
           missTimer = setTimeout(function () {
-            if (!fired && activeIdx >= 0) sub.textContent = "偏旁起伏时，在最佳时刻轻触";
+            if (!fired && activeIdx >= 0) sub.textContent = "在字符放大到最大时轻触";
           }, 900);
         }
       });
@@ -1030,6 +1064,7 @@
       var SPAWN_MAX = 700;
       var FALL_MIN = 4.2;
       var FALL_MAX = 7.8;
+      var MAX_TIME = 15000;          // 15s 超时自动放行
 
       var collected = [];
       var spawned = 0;
@@ -1037,6 +1072,7 @@
       var aiDone = false;
       var spawnTimer = null;
       var checkTimer = null;
+      var timeoutTimer = null;
 
       aiPromise.then(function () { aiDone = true; }, function () { aiDone = true; });
 
@@ -1119,8 +1155,10 @@
         if (gameOver) return;
         var allSpawned = spawned >= pool.length;
         var lastWordsGone = !stage.querySelector(".fw-word:not(.shattered)");
-        if (aiDone && (collected.length >= MAX_COLLECT || (allSpawned && lastWordsGone))) {
+        // AI 就绪即放行：收集满 OR 已收集至少1个且AI好了 OR 全部消失
+        if (aiDone && (collected.length >= MAX_COLLECT || collected.length >= 1 || (allSpawned && lastWordsGone))) {
           gameOver = true;
+          clearTimeout(timeoutTimer);
           clearTimeout(spawnTimer);
           clearTimeout(checkTimer);
           setTimeout(function () { resolve(collected); }, 600);
@@ -1164,6 +1202,10 @@
       // Kick off
       spawnTimer = setTimeout(spawnWord, 250);
       checkTimer = setTimeout(checkAI, 500);
+      // 超时兜底：即使不玩，15s 后自动放行
+      timeoutTimer = setTimeout(function () {
+        if (!gameOver && aiDone) { gameOver = true; clearTimeout(spawnTimer); resolve(collected); }
+      }, MAX_TIME);
     });
   }
 
@@ -1174,6 +1216,8 @@
       var MIN_TAP = 40;              // ignore taps shorter than this
       var SEQS_PER_LEVEL = 3;        // sequences before difficulty increases
       var MAX_COLLECT = 3;           // max subconscious words
+      var MAX_TIME = 15000;          // 15s 超时自动放行
+      var startTime = Date.now();
 
       var collectedWords = [];       // picked from the falling words pool
       var completedSeqs = 0;
@@ -1182,6 +1226,7 @@
       var pointerDown = 0;
       var pressing = false;
       var checkTimer = null;
+      var timeoutTimer = null;
 
       aiPromise.then(function () { aiDone = true; }, function () { aiDone = true; });
 
@@ -1208,13 +1253,11 @@
       app.innerHTML = onboardingShell(
         '<div class="morse-ritual-screen">' +
           '<div class="morse-meditation">' +
-            '<p class="morse-title">向世界发送调谐信号</p>' +
-            '<p class="morse-sub" id="mosub">轻触 = <b>·</b> &nbsp; 长按 = <b>−</b></p>' +
             '<div class="morse-stage" id="most">' +
               '<div class="morse-target" id="motgt"></div>' +
               '<div class="morse-ripples" id="morip"></div>' +
             '</div>' +
-            '<p class="morse-tally" id="motal">尚未校准</p>' +
+            '<p class="morse-tally" id="motal">轻按输入 <b>·</b>，长按输入 <b>−</b>；完成一组即可继续。</p>' +
             '<p class="morse-ai" id="moai"></p>' +
           '</div>' +
         '</div>',
@@ -1226,10 +1269,10 @@
       );
 
       var stage = document.getElementById("most");
-      var sub = document.getElementById("mosub");
       var target = document.getElementById("motgt");
       var ripples = document.getElementById("morip");
       var tally = document.getElementById("motal");
+      var sub = tally;
       var aiHint = document.getElementById("moai");
 
       /* ---- render ---- */
@@ -1272,11 +1315,11 @@
 
         // Update UI
         if (completedSeqs === 1) {
-          tally.textContent = '已校准 1 组 · 收获「' + collectedWords[0] + '」';
+          tally.textContent = '已完成 1 组 · 获得「' + collectedWords[0] + '」';
         } else if (completedSeqs <= MAX_COLLECT) {
-          tally.textContent = '已校准 ' + completedSeqs + ' 组 · 收获「' + collectedWords[collectedWords.length - 1] + '」';
+          tally.textContent = '已完成 ' + completedSeqs + ' 组 · 获得「' + collectedWords[collectedWords.length - 1] + '」';
         } else {
-          tally.textContent = '已校准 ' + completedSeqs + ' 组';
+          tally.textContent = '已完成 ' + completedSeqs + ' 组';
         }
 
         // Brief celebration
@@ -1285,18 +1328,31 @@
 
         // Make sub hint more encouraging
         if (completedSeqs >= SEQS_PER_LEVEL) {
-          sub.innerHTML = '信号越来越清晰……';
+          sub.innerHTML = '已完成，可以继续输入';
         }
 
         tryFinish();
       }
 
       function tryFinish() {
-        if (!gameOver && aiDone && completedSeqs >= 1) {
+        if (gameOver) return;
+        // 超时放行：不玩也过
+        var elapsed = Date.now() - startTime;
+        if (elapsed > MAX_TIME) {
           gameOver = true;
+          clearTimeout(timeoutTimer);
           transitionCooldownUntil = Date.now() + 400;
-          sub.textContent = '方向词已经生成';
-          tally.textContent = completedSeqs + ' 组校准 · ' + collectedWords.length + ' 个词语进入世界';
+          sub.textContent = aiDone ? '内容已准备好' : '时间到，等待内容……';
+          tally.textContent = '已完成 ' + completedSeqs + ' 组';
+          setTimeout(function () { resolve(collectedWords); }, 700);
+          return;
+        }
+        if (aiDone && completedSeqs >= 1) {
+          gameOver = true;
+          clearTimeout(timeoutTimer);
+          transitionCooldownUntil = Date.now() + 400;
+          sub.textContent = '内容已准备好';
+          tally.textContent = '已完成 ' + completedSeqs + ' 组';
           setTimeout(function () { resolve(collectedWords); }, 700);
         }
       }
@@ -1329,7 +1385,7 @@
           setTimeout(function () {
             ripples.classList.remove("error");
             stage.classList.remove("error");
-            sub.innerHTML = '轻触 = <b>·</b> &nbsp; 长按 = <b>−</b>';
+            sub.innerHTML = '轻触输入 <b>·</b>，长按输入 <b>−</b>';
           }, 700);
         }
       }
@@ -1386,11 +1442,13 @@
       /* ---- AI ready hint ---- */
       function checkAI() {
         if (aiDone && !gameOver) {
-          aiHint.textContent = '方向词已生成 · 至少完成一组校准即可查看';
+          aiHint.textContent = '内容已准备好 · 完成一组即可继续';
         }
         if (!gameOver) checkTimer = setTimeout(checkAI, 500);
       }
       checkTimer = setTimeout(checkAI, 500);
+      // 超时兜底：即使不玩，15s 后自动放行
+      timeoutTimer = setTimeout(function () { tryFinish(); }, MAX_TIME);
 
       renderSeq();
     });
@@ -1674,14 +1732,14 @@
     var echoHtml = "";
     if (state.activeView === "story") {
       var pending = state.interactionLog.length - state.lastEchoIndex;
-      echoHtml = '<button class="echo-button' + (pending > 0 ? ' has-pending' : '') + '" data-action="echo"' + (busy ? " disabled" : "") + ' aria-label="生成回响">' +
+      echoHtml = '<button class="echo-button' + (pending > 0 ? ' has-pending' : '') + '" data-action="echo"' + (busy ? " disabled" : "") + ' aria-label="将新互动整理成故事">' +
         '<img class="echo-icon" src="素材/按钮书1.png" alt="">' +
         (pending > 0 ? '<i>' + pending + '</i>' : "") +
       '</button>';
     }
     var isStory = state.activeView === "story";
     return '<header class="world-header">' +
-      '<button class="back-arrow" data-action="back-to-home" aria-label="回到首页">←</button>' +
+      '<button class="icon-button back-button" data-action="back-to-home" aria-label="回到首页">‹</button>' +
       (isStory ? '<span></span>' :
         '<div>' +
           '<small>' + state.worldSeed.title.replace(/[《》]/g, "") + '</small>' +
@@ -1696,6 +1754,8 @@
 
   function recordBadge(item) {
     var level = item.level || (item.intent === "world_question" ? "提问" : "讨论");
+    var levelLabels = { L1: "核心设定", L2: "世界规则", L3: "具体事件" };
+    level = levelLabels[level] || level;
     var labels = { added: "已写入", supplemented: "已补充", revised: "已修订", conflict: "有冲突", deferred: "未采纳", none: "未写入" };
     return '<span class="record-status ' + item.result + '">' + esc(level) + ' · ' + esc(labels[item.result]) + '</span>';
   }
@@ -1738,12 +1798,14 @@
     if (!timeline.length) {
       entries = '<div class="blank-page">' +
         '<span>✦</span>' +
-        '<p>世界停在入口处。写下一个行动、一条设定，或向眼前的异常发问。</p>' +
+        '<p>' + (isFictionWorld()
+          ? "写下一条规则、人物关系或地点设定，继续补全这个世界。"
+          : "写下一个行动、一条设定，或对眼前的异常提出问题。") + '</p>' +
       '</div>';
     }
 
     return '<div class="manuscript-scroll" data-scroll-container>' +
-      '<label class="log-switch log-switch-float" aria-label="切换交互/叙事视图">' +
+      '<label class="log-switch log-switch-float" aria-label="显示或隐藏完整互动记录">' +
         '<input type="checkbox" class="log-switch-input" data-action="toggle-log"' + (state.showFullLog ? ' checked' : '') + '>' +
         '<span class="log-switch-track"><span class="log-switch-thumb"></span></span>' +
       '</label>' +
@@ -1785,16 +1847,16 @@
   }
 
   function renderSettings() {
-    return listSection("底层公理", "L1", state.worldState.axioms, function (item) {
-      return '<article><strong>' + esc(item.text) + '</strong><small>极少修订 · 影响整个世界</small></article>';
+    return listSection("核心设定", "核心", state.worldState.axioms, function (item) {
+      return '<article><strong>' + esc(item.text) + '</strong><small>决定整个世界如何运转</small></article>';
     }) +
-    listSection("运行规则", "L2", state.worldState.rules, function (item) {
-      return '<article><strong>' + esc(item.text) + '</strong><small>制度、文化、自然或共同信念</small></article>';
+    listSection("具体规则", "规则", state.worldState.rules, function (item) {
+      return '<article><strong>' + esc(item.text) + '</strong><small>适用于制度、文化、自然或共同信念</small></article>';
     });
   }
 
   function renderTimeline() {
-    return listSection("已经发生", "EVENTS", state.worldState.events, function (item, index) {
+    return listSection("已经发生", "事件", state.worldState.events, function (item, index) {
       return '<article class="timeline-item">' +
         '<span>' + String(index + 1).padStart(2, "0") + '</span>' +
         '<div><strong>' + esc(item.title) + '</strong><p>' + esc(item.text) + '</p></div>' +
@@ -1803,18 +1865,18 @@
   }
 
   function renderCharacters() {
-    return listSection("人物与实体", "L3", state.worldState.entities, function (item) {
+    return listSection("人物与其他存在", "人物", state.worldState.entities, function (item) {
       var latestFact = item.facts && item.facts.length ? item.facts[item.facts.length - 1] : "尚无更多事实";
       return '<article class="entity-item"><span>' + esc(item.name.slice(0, 1)) + '</span>' +
         '<div><strong>' + esc(item.name) + '</strong><p>' + esc(latestFact) + '</p></div></article>';
     }) +
-    listSection("关系", "LINKS", state.worldState.relationships, function (item) {
+    listSection("关系", "关系", state.worldState.relationships, function (item) {
       return '<article><strong>' + esc(item.from) + ' → ' + esc(item.to) + '</strong><small>' + esc(item.type) + '</small></article>';
     });
   }
 
   function renderLocations() {
-    return listSection("空间与地点", "L3", state.worldState.locations, function (item, index) {
+    return listSection("空间与地点", "地点", state.worldState.locations, function (item, index) {
       return '<article class="location-item"><span>⌖</span>' +
         '<div><strong>' + esc(item.name) + '</strong><p>' + esc(item.description) + '</p>' +
         '<small>地点 ' + String(index + 1).padStart(2, "0") + '</small></div></article>';
@@ -1829,14 +1891,14 @@
     var consultationsHtml = "";
     if (queries.length) {
       consultationsHtml = '<section class="archive-consultations">' +
-        '<header><span>AI</span><h3>档案问答</h3></header>';
+        '<header><span>问答</span><h3>查询记录</h3></header>';
       for (var i = 0; i < queries.length; i++) {
         var query = queries[i];
         consultationsHtml += '<article>' +
           '<strong>' + esc(query.question) + '</strong>' +
           '<p>' + esc(query.answer) + '</p>' +
           '<button data-action="write-query-to-story" data-id="' + query.id + '"' + (query.written ? " disabled" : "") + '>' +
-            (query.written ? "已写入故事" : "明确写入故事") +
+            (query.written ? "已带回故事" : "作为参考带回故事") +
           '</button>' +
         '</article>';
       }
@@ -1846,7 +1908,7 @@
     return '<div class="archive-scroll" data-scroll-container>' +
       '<div class="archive-intro">' +
         '<span>' + view.icon + '</span>' +
-        '<p>这里是同一世界状态的「' + view.name + '」投影。查询与整理默认不会进入故事正文。</p>' +
+        '<p>在这里查看或查询「' + view.name + '」；查询不会自动改变故事。</p>' +
       '</div>' +
       renderers[state.activeView]() +
       consultationsHtml +
@@ -1856,8 +1918,12 @@
 
   function renderComposer() {
     var isStory = state.activeView === "story";
+    var isFiction = isStory && isFictionWorld();
     var formType = isStory ? "world-input" : "archive-query";
-    var placeholder = isStory ? "在世界中行动、设定或发问……" : "向" + VIEWS[state.activeView].name + "档案查询……";
+    var waitingText = composerWaitingLabel || defaultComposerWaitingLabel();
+    var placeholder = busy
+      ? waitingText + "……"
+      : (isStory ? storyComposerPlaceholder() : "向" + VIEWS[state.activeView].name + "档案查询……");
 
     // Guide button: only in story mode, only if hints/quests exist
     var guideBtnHtml = "";
@@ -1865,20 +1931,27 @@
       var totalGuideItems = (state.worldSeed.hints ? state.worldSeed.hints.length : 0) + (state.worldSeed.quests ? state.worldSeed.quests.length : 0);
       var remaining = totalGuideItems - state.revealedGuideCount;
       if (totalGuideItems > 0) {
-        var guideLabel = remaining > 0 ? "提示 · 剩" + remaining : "提示 · 已全部揭示";
+        var guideName = "灵感";
+        var guideLabel = remaining > 0 ? guideName + " · 剩" + remaining : guideName + " · 已全部揭示";
         var guideClass = "guide-button" + (remaining > 0 ? "" : " all-revealed") + (busy ? "" : "");
-        guideBtnHtml = '<button type="button" class="' + guideClass + '" data-action="reveal-guide" aria-label="' + guideLabel + '"' + (remaining <= 0 ? " disabled" : "") + '>' +
+        guideBtnHtml = '<button type="button" class="' + guideClass + '" data-action="reveal-guide" aria-label="' + guideLabel + '"' + (remaining <= 0 || busy ? " disabled" : "") + '>' +
           '<span>' + (remaining > 0 ? remaining : "⌘") + '</span>' +
         '</button>';
       }
     }
 
-    return '<form class="composer ' + (isStory ? "story-composer" : "archive-composer") + '" data-form="' + formType + '">' +
+    return '<form class="composer ' + (isStory ? "story-composer" : "archive-composer") + (busy ? " composer-waiting" : "") + '" data-form="' + formType + '">' +
+      '<div class="ai-waiting-indicator" role="status" aria-live="polite" aria-hidden="' + (busy ? "false" : "true") + '">' +
+        '<span class="ai-waiting-dots" aria-hidden="true"><i></i><i></i><i></i></span>' +
+        '<span class="ai-waiting-text">' + esc(waitingText) + '</span>' +
+      '</div>' +
       (guideBtnHtml || '<span class="composer-spacer"></span>') +
       '<label>' +
-        '<textarea rows="1" maxlength="500" data-composer-input required placeholder="' + placeholder + '"></textarea>' +
+        '<textarea rows="1" maxlength="500" data-composer-input required placeholder="' + placeholder + '"' + (busy ? " disabled" : "") + '></textarea>' +
       '</label>' +
-      '<button type="submit" class="send-button" aria-label="发送"' + (busy ? " disabled" : "") + '>→</button>' +
+      '<button type="submit" class="send-button" aria-label="发送"' + (busy ? " disabled" : "") + '>' +
+        '<img src="素材/figma-expression/submit-button.png" alt="" aria-hidden="true">' +
+      '</button>' +
     '</form>';
   }
 
@@ -1889,7 +1962,7 @@
         (state.activeView === "story" ? renderStory() : renderArchive()) +
       '</main>' +
       renderComposer() +
-      '<nav class="world-tabs" aria-label="世界构建书视图">' +
+      '<nav class="world-tabs" aria-label="世界内容">' +
         (function () {
           var tabs = "";
           var viewKeys = Object.keys(VIEWS);
@@ -1899,7 +1972,7 @@
             tabs += '<button data-action="switch-view" data-value="' + id + '"' +
               (state.activeView === id ? ' class="active" aria-current="page"' : ' aria-current="false"') + '>' +
               (id === "story"
-                ? '<img class="tab-book-icon" src="素材/书.png" alt="">'
+                ? '<img class="tab-book-icon" src="素材/书.png" alt="故事">'
                 : '<small>' + v.name + '</small>') +
             '</button>';
           }
@@ -2037,7 +2110,7 @@
   async function retrySecondary() {
     if (busy) return;
     if (state.worldSeeds.length >= MAX_ROUNDS) {
-      showToast("已经尝试了" + MAX_ROUNDS + "批方向，请从已有的世界中选择");
+      showToast("已生成 " + MAX_ROUNDS + " 个方案，请从中选择一个");
       return;
     }
     busy = true;
@@ -2068,7 +2141,7 @@
       });
     } catch (error) {
       busy = false;
-      showToast("词语暂时没有回应，请再试一次");
+      showToast("暂时无法生成选项，请再试一次");
       render();
     }
   }
@@ -2100,7 +2173,8 @@
         state.worldSeed, state.worldState, state.interactionLog,
         existingHints, existingQuests,
         state.material || state.base,
-        state.tone
+        state.tone,
+        state.domain
       );
       if (newGuides && ((newGuides.hints && newGuides.hints.length) || (newGuides.quests && newGuides.quests.length))) {
         var updatedHints = existingHints.concat(newGuides.hints || []);
@@ -2110,7 +2184,7 @@
         });
         persist();
         render();
-        showToast("新的线索浮现了");
+        showToast("新的灵感已准备好");
       }
     } catch (e) {
       console.warn("generateNewGuides 失败: " + e.message);
@@ -2188,7 +2262,7 @@
         // 用户正在提交内容时不重建编辑器；提交完成后的 render 会带出最新状态。
         setState({ worldState: newWorldState }, !busy);
         if (!busy && !extracted._fallback) {
-          showToast("已从种子中解析出 " + patches.length + " 项设定");
+          showToast("已整理出 " + patches.length + " 项世界内容");
         }
       }
     } catch (e) {
@@ -2202,7 +2276,7 @@
     if (busy) return;
     busy = true;
     // 不重建整个 DOM，仅禁用输入区 + 呼吸态提示
-    setComposerWaiting(true);
+    setComposerWaiting(true, isFictionWorld() ? "正在检查这条设定" : "正在生成回应");
     try {
       var result = await window.TarotAI.processWorldInput(state, input);
       var entry = {
@@ -2228,10 +2302,14 @@
       autoSaveArchive();
       // 渐进式引导生成：每 N 次有效互动触发一次
       if (isMeaningful && newCounter > 0 && newCounter % GUIDE_UNLOCK_INTERVAL === 0) {
-        generateNewGuides();
+        setComposerWaiting(
+          true,
+          "正在整理新的灵感"
+        );
+        await generateNewGuides();
       }
     } catch (error) {
-      showToast("世界没有听清，请再写一次");
+      showToast("暂时无法处理，请再试一次");
     } finally {
       busy = false;
       setComposerWaiting(false);
@@ -2243,7 +2321,7 @@
     if (busy) return;
     busy = true;
     // 不冻结 UI：仅禁用输入区
-    setComposerWaiting(true, "正在查阅档案……");
+    setComposerWaiting(true, "正在查询");
     try {
       var answer = await window.TarotAI.queryArchive(state.activeView, state.worldState, question, state.tone, state.worldSeed);
       var query = {
@@ -2257,7 +2335,7 @@
       archiveQueries[state.activeView].push(query);
       setState({ archiveQueries: archiveQueries });
     } catch (error) {
-      showToast("档案暂时无法回答");
+      showToast("暂时无法回答，请稍后再试");
     } finally {
       busy = false;
       setComposerWaiting(false);
@@ -2269,18 +2347,19 @@
     if (busy) return;
     var endIndex = state.interactionLog.length - 1;
     if (endIndex < state.lastEchoIndex) {
-      showToast("还没有新的有效互动可供编纂");
+      showToast("还没有新的互动可整理");
       return;
     }
     busy = true;
     // 直接禁用回响按钮，不重建整个视图（用户仍可翻阅故事）
     var echoBtn = document.querySelector(".echo-button");
     if (echoBtn) echoBtn.disabled = true;
-    showToast("正在编纂尚未叙事化的互动");
+    setComposerWaiting(true, "正在整理故事");
+    showToast("正在将新的互动整理成故事");
     try {
       var echo = await window.TarotAI.generateEcho(state, state.lastEchoIndex, endIndex);
       if (!echo) {
-        showToast("这一段没有通过检定的世界变化");
+        showToast("这段互动还没有形成可整理的变化");
         busy = false;
         if (echoBtn) echoBtn.disabled = false;
         return;
@@ -2291,9 +2370,10 @@
       });
       autoSaveArchive();
     } catch (error) {
-      showToast("回响暂时没有形成");
+      showToast("暂时无法整理，请稍后再试");
     } finally {
       busy = false;
+      setComposerWaiting(false);
       render();
     }
   }
@@ -2316,12 +2396,12 @@
     if (!source) return;
     var entry = {
       id: "log_" + Date.now().toString(36),
-      userInput: "我把档案中的问题带入世界：" + source.question,
+      userInput: "我把查询中的问题带回故事：" + source.question,
       intent: "meta",
       level: null,
       result: "deferred",
       patches: [],
-      response: "这条档案查询已被明确带入羽毛故事书，作为尚未成为事实的创作痕迹。若要让它改变世界，请继续写下世界内的行动或设定。",
+      response: "这条查询已作为参考加入故事，但还不是世界中的事实。若要让它改变世界，请继续写下相关行动或设定。",
       createdAt: new Date().toISOString(),
       retracted: false
     };
@@ -2331,7 +2411,7 @@
       activeView: "story"
     });
     autoSaveArchive();
-    showToast("已明确写入羽毛故事书");
+    showToast("已作为参考带回故事");
   }
 
   function goBack() {
@@ -2413,7 +2493,7 @@
     link.download = "白日幻想-" + (state.worldSeed.title.replace(/[《》]/g, "") || "世界档案") + ".json";
     link.click();
     URL.revokeObjectURL(url);
-    showToast("世界档案已导出");
+    showToast("世界内容已导出");
   }
 
   function buildArchiveData(keepId, keepCreatedAt) {
@@ -2644,26 +2724,6 @@
         home.dataset.homeTone = nextTone;
       }
       target.setAttribute("aria-pressed", nextTone === "dark" ? "true" : "false");
-    } else if (action === "play-dream") {
-      var dreamEntry = target.closest(".home-dream-entry");
-      if (!dreamEntry || dreamEntry.classList.contains("is-playing")) return;
-      var dreamVideo = dreamEntry.querySelector(".home-dream-video");
-      if (!dreamVideo) return;
-      dreamEntry.classList.add("is-playing");
-      var playingHome = dreamEntry.closest(".dream-home");
-      if (playingHome) playingHome.classList.add("dream-playing");
-      target.setAttribute("aria-label", "入梦动画正在播放");
-      dreamVideo.currentTime = 0;
-      dreamVideo.muted = true;
-      var playPromise = dreamVideo.play();
-      if (playPromise && typeof playPromise.catch === "function") {
-        playPromise.catch(function () {
-          dreamEntry.classList.remove("is-playing");
-          if (playingHome) playingHome.classList.remove("dream-playing");
-          target.setAttribute("aria-label", "播放动画并进入世界");
-          showToast("轻触一次，让梦境开始播放");
-        });
-      }
     } else if (action === "toggle-home-archive" || action === "close-home-archive") {
       var dreamHome = document.querySelector(".dream-home");
       if (dreamHome) {
@@ -2842,23 +2902,67 @@
     }
   });
 
-  app.addEventListener("timeupdate", function (event) {
-    var video = event.target;
-    if (!video.classList || !video.classList.contains("home-dream-video")) return;
-    var entry = video.closest(".home-dream-entry");
-    if (!entry || !Number.isFinite(video.duration)) return;
-    if (video.duration - video.currentTime < .7) entry.classList.add("is-ending");
+  // 阻止 GIF 被直接点击 => 防止抖音 webview 触发原生行为
+  app.addEventListener("click", function (event) {
+    var gif = event.target;
+    if (gif && gif.classList && gif.classList.contains("home-dream-gif")) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
   }, true);
 
-  app.addEventListener("ended", function (event) {
-    var video = event.target;
-    if (!video.classList || !video.classList.contains("home-dream-video")) return;
-    setState({
-      tone: state.tone === "dark" ? "dark" : "light",
-      phase: "domain",
-      restored: false
-    });
-  }, true);
+  // --- 脉轮长按交互：长按显示 GIF（播放），松手隐藏（暂停） ---
+  var dreamPressState = null;
+  var DREAM_GIF_DURATION = 2800; // ms，到时间自动跳转
+
+  function beginDreamPress(entry, gif) {
+    if (!entry || !gif || (dreamPressState && dreamPressState.active)) return;
+    entry.classList.add("is-pressing");
+    gif.style.opacity = "1";
+    dreamPressState = { gif: gif, entry: entry, active: true, timer: null };
+    dreamPressState.timer = setTimeout(function () {
+      if (!dreamPressState || !dreamPressState.active) return;
+      entry.classList.add("is-ending");
+      setTimeout(function () {
+        if (dreamPressState) { dreamPressState.active = false; }
+        setState({
+          tone: state.tone === "dark" ? "dark" : "light",
+          phase: "domain",
+          restored: false
+        });
+      }, 580);
+    }, DREAM_GIF_DURATION);
+  }
+
+  function endDreamPress() {
+    if (!dreamPressState || !dreamPressState.active) return;
+    dreamPressState.entry.classList.remove("is-pressing", "is-ending");
+    dreamPressState.gif.style.opacity = "";
+    if (dreamPressState.timer) { clearTimeout(dreamPressState.timer); dreamPressState.timer = null; }
+    dreamPressState.active = false;
+  }
+
+  app.addEventListener("touchstart", function (event) {
+    var mandala = event.target.closest(".home-dream-mandala");
+    if (!mandala) return;
+    event.preventDefault();
+    var entry = mandala.closest(".home-dream-entry");
+    beginDreamPress(entry, entry ? entry.querySelector(".home-dream-gif") : null);
+  }, { passive: false });
+
+  app.addEventListener("touchend", endDreamPress);
+  app.addEventListener("touchcancel", endDreamPress);
+
+  app.addEventListener("mousedown", function (event) {
+    var mandala = event.target.closest(".home-dream-mandala");
+    if (!mandala) return;
+    event.preventDefault();
+    var entry = mandala.closest(".home-dream-entry");
+    beginDreamPress(entry, entry ? entry.querySelector(".home-dream-gif") : null);
+  });
+
+  app.addEventListener("mouseup", endDreamPress);
 
   app.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -2866,7 +2970,7 @@
     if (form.dataset.form === "expression") {
       var input = form.querySelector("textarea").value.trim();
       if (input.length < 2 || busy) {
-        showToast("再多写一点，让世界听见你");
+        showToast("请至少写两个字");
         return;
       }
       busy = true;
@@ -2890,7 +2994,7 @@
         setState({ secondaryThemes: secondaryThemes, subconsciousWords: associations, phase: "secondary" });
       } catch (error) {
         busy = false;
-        showToast("词语暂时没有回应，请再试一次");
+        showToast("暂时无法生成选项，请再试一次");
         render();
       }
     } else if (form.dataset.form === "world-input") {
