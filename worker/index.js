@@ -219,8 +219,64 @@ export default {
       }
     }
 
+    // ====== GET /api/sessions — 会话聚合列表（分页） ======
+    if (path === '/api/sessions') {
+      try {
+        const project = url.searchParams.get('project') || 'daydream';
+        const days = parseInt(url.searchParams.get('days') || '7');
+        const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+        const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50')));
+        const offset = (page - 1) * limit;
+        const since = `-${days} days`;
+
+        // 总数
+        const countResult = await env.DB.prepare(`
+          SELECT COUNT(DISTINCT session_id) as total
+          FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
+        `).bind(project, since).first();
+
+        // 会话聚合 + 最常/最少访问页面（子查询）
+        const { results } = await env.DB.prepare(`
+          SELECT
+            e.session_id,
+            MIN(e.created_at) as first_seen,
+            MAX(e.created_at) as last_seen,
+            MAX(e.device) as device,
+            MAX(e.os) as os,
+            MAX(e.browser) as browser,
+            COUNT(DISTINCT CASE WHEN e.event_type = '页面访问' AND e.page_path != '' THEN e.page_path END) as pages_visited,
+            COUNT(CASE WHEN e.event_type = 'API调用' THEN 1 END) as api_calls,
+            COALESCE(SUM(CASE WHEN e.event_type = 'API调用' THEN e.total_tokens END), 0) as total_tokens,
+            COALESCE(SUM(CASE WHEN e.event_type = 'API调用' THEN e.prompt_tokens END), 0) as prompt_tokens,
+            COALESCE(SUM(CASE WHEN e.event_type = 'API调用' THEN e.completion_tokens END), 0) as completion_tokens,
+            COALESCE(MAX(CASE WHEN e.event_type = '页面离开' THEN e.duration END), 0) as duration,
+            (SELECT e2.page_path FROM events e2
+             WHERE e2.session_id = e.session_id AND e2.event_type = '页面访问' AND e2.page_path != ''
+             GROUP BY e2.page_path ORDER BY COUNT(*) DESC LIMIT 1) as top_page,
+            (SELECT e2.page_path FROM events e2
+             WHERE e2.session_id = e.session_id AND e2.event_type = '页面访问' AND e2.page_path != ''
+             GROUP BY e2.page_path ORDER BY COUNT(*) ASC LIMIT 1) as least_page
+          FROM events e
+          WHERE e.project_id = ? AND e.created_at >= datetime('now', ?)
+            AND e.session_id != ''
+          GROUP BY e.session_id
+          ORDER BY first_seen DESC
+          LIMIT ? OFFSET ?
+        `).bind(project, since, limit, offset).all();
+
+        return json({
+          sessions: results || [],
+          total: countResult?.total || 0,
+          page,
+          limit,
+        });
+      } catch (err) {
+        return json({ error: err.message }, 500);
+      }
+    }
+
     // ====== GET / — ======
-    return new Response('Daydream Analytics API — /track /api/stats /api/projects /api/events', {
+    return new Response('Daydream Analytics API — /track /api/stats /api/projects /api/events /api/sessions', {
       headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' },
     });
   },

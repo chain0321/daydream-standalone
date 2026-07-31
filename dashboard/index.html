@@ -103,11 +103,11 @@
     <div class="card"><h3>📄 热门页面</h3><div id="pages"></div></div>
   </div>
 
-  <!-- 原始数据 -->
+  <!-- 会话数据 -->
   <div class="card" style="margin-bottom:16px">
-    <h3>📋 原始数据</h3>
+    <h3>📋 访问会话</h3>
     <div class="raw-wrap"><table><thead><tr>
-      <th>时间</th><th>事件</th><th>页面</th><th>设备</th><th>OS</th><th>浏览器</th><th>操作</th><th>状态</th><th>模型</th><th>Token</th><th>费用</th>
+      <th>开始时间</th><th>设备</th><th>OS</th><th>浏览器</th><th>API调用</th><th>停留时长</th><th>访问页数</th><th>最多访问页面</th><th>Token</th><th>费用</th>
     </tr></thead><tbody id="rawBody"></tbody></table></div>
     <div class="pagination" id="rawPager"></div>
   </div>
@@ -116,8 +116,8 @@
 <script>
 const API = 'https://agroupof10.com/api/backend/api/v1/analytics';
 let _stats = null;
-let _eventsPage = 1;
-let _eventsLimit = 50;
+let _sessionsPage = 1;
+let _sessionsLimit = 50;
 
 function priceIn() { return parseFloat(document.getElementById('priceInput').value) || 0; }
 function priceOut() { return parseFloat(document.getElementById('priceOutput').value) || 0; }
@@ -151,7 +151,7 @@ async function load() {
     renderChart(_stats.byDate || []);
     renderDevices(_stats.byDevice || []);
     renderPages(_stats.byPage || []);
-    loadEvents(1);
+    loadSessions(1);
   } catch(e) {
     document.getElementById('kpis').innerHTML = '<div class="empty">加载失败</div>';
   }
@@ -195,7 +195,7 @@ function renderTokenCards(d) {
 
 function recalc() {
   if (_stats) renderTokenCards(_stats);
-  if (_stats) loadEvents(_eventsPage);
+  if (_stats) loadSessions(_sessionsPage);
 }
 
 /* ====== 趋势图 ====== */
@@ -240,54 +240,54 @@ function renderPages(pages) {
   }).join('') + '</table>';
 }
 
-/* ====== 原始数据 ====== */
-async function loadEvents(page) {
-  _eventsPage = page || 1;
+/* ====== 访问会话 ====== */
+async function loadSessions(page) {
+  _sessionsPage = page || 1;
   var project = document.getElementById('project').value;
   var days = document.getElementById('days').value;
   try {
-    var res = await fetch(API + '/api/events?project=' + project + '&days=' + days + '&page=' + _eventsPage + '&limit=' + _eventsLimit);
+    var res = await fetch(API + '/api/sessions?project=' + project + '&days=' + days + '&page=' + _sessionsPage + '&limit=' + _sessionsLimit);
     var d = await res.json();
-    renderRawTable(d);
-    renderPager(d);
+    renderSessionsTable(d);
+    renderSessionsPager(d);
   } catch(e) {
-    document.getElementById('rawBody').innerHTML = '<tr><td colspan="11" class="empty">加载失败</td></tr>';
+    document.getElementById('rawBody').innerHTML = '<tr><td colspan="10" class="empty">加载失败</td></tr>';
   }
 }
 
-function renderRawTable(d) {
-  var events = d.events || [];
+var DEVICE_NAMES = {desktop:'🖥 桌面',mobile:'📱 移动',tablet:'📋 平板'};
+
+function renderSessionsTable(d) {
+  var sessions = d.sessions || [];
   var body = document.getElementById('rawBody');
-  if (!events.length) { body.innerHTML = '<tr><td colspan="11" class="empty">暂无数据</td></tr>'; return; }
-  body.innerHTML = events.map(function(e){
-    var et = e.event_type||'';
-    var tagCls = et === 'API调用' ? (e.api_status === 'success' ? 'tag-s' : 'tag-e') : 'tag-t';
-    var cost = calcCost(e.prompt_tokens||0, e.completion_tokens||0);
+  if (!sessions.length) { body.innerHTML = '<tr><td colspan="10" class="empty">暂无数据</td></tr>'; return; }
+  body.innerHTML = sessions.map(function(s){
+    var cost = calcCost(s.prompt_tokens||0, s.completion_tokens||0);
+    var dur = s.duration ? Math.round(s.duration) + 's' : '-';
     return '<tr>' +
-      '<td style="color:#666;font-size:11px">' + (e.created_at||'').replace('T',' ').slice(0,19) + '</td>' +
-      '<td><span class="tag ' + tagCls + '">' + et + '</span></td>' +
-      '<td style="color:#aaa;font-size:12px">' + (e.page_path||'-') + '</td>' +
-      '<td style="color:#888;font-size:11px">' + (e.device||'-') + '</td>' +
-      '<td style="color:#888;font-size:11px">' + (e.os||'-') + '</td>' +
-      '<td style="color:#888;font-size:11px">' + (e.browser||'-') + '</td>' +
-      '<td style="color:#aaa;font-size:12px">' + (e.operation||'-') + '</td>' +
-      '<td>' + (e.api_status ? '<span class="tag ' + (e.api_status==='success'?'tag-s':'tag-e') + '">' + e.api_status + '</span>' : '-') + '</td>' +
-      '<td style="color:#888;font-size:11px">' + (e.model||'-') + '</td>' +
-      '<td style="color:#ccc;font-size:12px">' + (e.total_tokens ? fmtNum(e.total_tokens) : '-') + '</td>' +
-      '<td style="color:#ffb300;font-size:12px">' + (e.total_tokens ? fmtCost(cost) : '-') + '</td>' +
+      '<td style="color:#ccc;font-size:12px">' + (s.first_seen||'').replace('T',' ').slice(0,16) + '</td>' +
+      '<td style="color:#aaa;font-size:12px">' + (DEVICE_NAMES[s.device]||s.device||'-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (s.os||'-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (s.browser||'-') + '</td>' +
+      '<td style="color:#ccc;font-size:13px">' + (s.api_calls||0) + '</td>' +
+      '<td style="color:#aaa;font-size:12px">' + dur + '</td>' +
+      '<td style="color:#ccc;font-size:13px">' + (s.pages_visited||0) + '</td>' +
+      '<td style="color:#aaa;font-size:11px;max-width:120px" title="' + (s.top_page||'') + '">' + (s.top_page||'-') + '</td>' +
+      '<td style="color:#ccc;font-size:12px">' + (s.total_tokens ? fmtNum(s.total_tokens) : '-') + '</td>' +
+      '<td style="color:#ffb300;font-size:12px">' + (s.total_tokens ? fmtCost(cost) : '-') + '</td>' +
     '</tr>';
   }).join('');
 }
 
-function renderPager(d) {
+function renderSessionsPager(d) {
   var total = d.total || 0;
   var page = d.page || 1;
-  var limit = d.limit || _eventsLimit;
+  var limit = d.limit || _sessionsLimit;
   var totalPages = Math.ceil(total / limit);
   document.getElementById('rawPager').innerHTML =
-    '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadEvents(' + (page-1) + ')">← 上一页</button>' +
-    '<span>第 ' + page + ' / ' + totalPages + ' 页（共 ' + total + ' 条）</span>' +
-    '<button ' + (page >= totalPages ? 'disabled' : '') + ' onclick="loadEvents(' + (page+1) + ')">下一页 →</button>';
+    '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadSessions(' + (page-1) + ')">← 上一页</button>' +
+    '<span>第 ' + page + ' / ' + totalPages + ' 页（共 ' + total + ' 次会话）</span>' +
+    '<button ' + (page >= totalPages ? 'disabled' : '') + ' onclick="loadSessions(' + (page+1) + ')">下一页 →</button>';
 }
 
 loadProjects();
