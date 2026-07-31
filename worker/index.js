@@ -142,7 +142,7 @@ export default {
           SELECT page_path, COUNT(*) as count
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
             AND event_type = '页面访问' AND page_path != ''
-          GROUP BY page_path ORDER BY count DESC LIMIT 10
+          GROUP BY page_path ORDER BY count DESC LIMIT 1
         `).bind(project, since).all();
 
         // API 调用统计（含 token）
