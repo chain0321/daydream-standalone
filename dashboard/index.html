@@ -175,10 +175,11 @@ function renderKPI(d) {
   var t = d.total || {};
   var a = d.apiStats || {};
   document.getElementById('kpis').innerHTML =
-    '<div class="kpi"><div class="label">🧑 独立访客 (UV)</div><div class="value">' + (t.uv||0) + '</div></div>' +
+    '<div class="kpi"><div class="label">🧑 独立访客 (UV)</div><div class="value">' + (t.uv||0) + '</div><div class="sub">基于设备标识去重</div></div>' +
+    '<div class="kpi"><div class="label">👣 访问次数</div><div class="value">' + (t.visits||0) + '</div><div class="sub">每次打开/恢复为一次访问</div></div>' +
     '<div class="kpi"><div class="label">⚡ API 调用次数</div><div class="value">' + (a.total_calls||0) + '</div><div class="sub">成功 ' + (a.success||0) + ' · 失败 ' + (a.error||0) + ' · 均 ' + Math.round(a.avg_ms||0) + 'ms</div></div>' +
     '<div class="kpi"><div class="label">⏱ 平均停留时长</div><div class="value">' + (t.avg_duration ? Math.round(t.avg_duration) + 's' : '-') + '</div></div>' +
-    '<div class="kpi"><div class="label">📄 平均页面访问</div><div class="value">' + (t.avg_pages_per_visitor||'0') + '</div><div class="sub">独立页面数 ÷ UV</div></div>';
+    '<div class="kpi"><div class="label">📄 平均页面访问</div><div class="value">' + (t.avg_pages_per_visitor||'0') + '</div><div class="sub">页面浏览 ÷ UV</div></div>';
 }
 
 /* ====== Token 卡片 ====== */

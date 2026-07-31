@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS events (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   project_id TEXT NOT NULL DEFAULT 'daydream',
+  visitor_id TEXT,
   session_id TEXT,
   event_type TEXT,
   page_path TEXT,

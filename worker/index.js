@@ -55,10 +55,11 @@ export default {
         const ua = (body.userAgent || request.headers.get('User-Agent') || '').toLowerCase();
 
         await env.DB.prepare(`
-          INSERT INTO events (project_id, session_id, event_type, page_path, device, os, browser, screen, duration, operation, api_status, api_duration, model, country, language, referrer, prompt_tokens, completion_tokens, total_tokens)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO events (project_id, visitor_id, session_id, event_type, page_path, device, os, browser, screen, duration, operation, api_status, api_duration, model, country, language, referrer, prompt_tokens, completion_tokens, total_tokens)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           body.project || 'daydream',
+          body.visitorId || '',
           body.sessionId || '',
           body.eventType || '页面访问',
           body.pagePath || '',
@@ -106,9 +107,11 @@ export default {
         const days = parseInt(url.searchParams.get('days') || '7');
         const since = `-${days} days`;
 
-        // 总览：PV, UV, 平均停留, 独立页面数
+        // 总览：PV, UV（visitor_id）, 访问次数（session_id）, 平均停留, 独立页面数
         const total = await env.DB.prepare(`
-          SELECT COUNT(*) as pv, COUNT(DISTINCT session_id) as uv,
+          SELECT COUNT(*) as pv,
+            COUNT(DISTINCT visitor_id) as uv,
+            COUNT(DISTINCT session_id) as visits,
             AVG(duration) as avg_duration,
             COUNT(DISTINCT page_path) as unique_pages
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
@@ -121,14 +124,15 @@ export default {
         // 按日期
         const byDate = await env.DB.prepare(`
           SELECT date(created_at) as date, COUNT(*) as pv,
-            COUNT(DISTINCT session_id) as uv
+            COUNT(DISTINCT visitor_id) as uv,
+            COUNT(DISTINCT session_id) as visits
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
           GROUP BY date(created_at) ORDER BY date
         `).bind(project, since).all();
 
-        // 设备分布 — 按 UV（独立访客）统计
+        // 设备分布 — 按 UV（visitor_id 去重）
         const byDevice = await env.DB.prepare(`
-          SELECT device, COUNT(DISTINCT session_id) as count
+          SELECT device, COUNT(DISTINCT visitor_id) as count
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?) AND device != ''
           GROUP BY device
         `).bind(project, since).all();
@@ -160,6 +164,7 @@ export default {
           total: {
             pv: total?.pv || 0,
             uv: total?.uv || 0,
+            visits: total?.visits || 0,
             avg_duration: total?.avg_duration || 0,
             avg_pages_per_visitor: parseFloat(avgPagesPerVisitor) || 0,
           },

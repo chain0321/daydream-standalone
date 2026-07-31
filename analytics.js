@@ -11,6 +11,7 @@
   var PROJECT_ID = '__ANALYTICS_PROJECT_ID__';
   var SESSION_KEY = 'daydream-analytics-sid';
   var VISIT_START_KEY = 'daydream-analytics-start';
+  var VISITOR_KEY = 'daydream-analytics-vid';
 
   // ---- 会话管理 ----
   function getSessionId() {
@@ -29,6 +30,15 @@
       sessionStorage.setItem(VISIT_START_KEY, t);
     }
     return parseInt(t, 10);
+  }
+
+  function getVisitorId() {
+    var vid = localStorage.getItem(VISITOR_KEY);
+    if (!vid) {
+      vid = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      localStorage.setItem(VISITOR_KEY, vid);
+    }
+    return vid;
   }
 
   // ---- 设备检测 ----
@@ -68,6 +78,7 @@
     try {
       var data = JSON.parse(JSON.stringify(payload));
       data.sessionId = getSessionId();
+      data.visitorId = getVisitorId();
       data.project = PROJECT_ID || 'daydream';
       // 使用 sendBeacon 或 fetch，不阻塞页面
       var body = JSON.stringify(data);
