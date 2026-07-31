@@ -108,7 +108,7 @@
   <div class="card" style="margin-bottom:16px">
     <h3>📋 访问会话</h3>
     <div class="raw-wrap"><table><thead><tr>
-      <th>开始时间</th><th>设备</th><th>OS</th><th>浏览器</th><th>API调用</th><th>停留时长</th><th>访问页数</th><th>最多访问页面</th><th>Token</th><th>费用</th>
+      <th>开始时间</th><th>设备</th><th>OS</th><th>浏览器</th><th>API调用</th><th>停留时长</th><th>访问页数</th><th>最多</th><th>最少</th><th>Token</th><th>费用</th>
     </tr></thead><tbody id="rawBody"></tbody></table></div>
     <div class="pagination" id="rawPager"></div>
   </div>
@@ -268,7 +268,7 @@ async function loadSessions(page) {
     renderSessionsTable(d);
     renderSessionsPager(d);
   } catch(e) {
-    document.getElementById('rawBody').innerHTML = '<tr><td colspan="10" class="empty">加载失败</td></tr>';
+    document.getElementById('rawBody').innerHTML = '<tr><td colspan="11" class="empty">加载失败</td></tr>';
   }
 }
 
@@ -277,7 +277,7 @@ var DEVICE_NAMES = {desktop:'🖥 桌面',mobile:'📱 移动',tablet:'📋 平�
 function renderSessionsTable(d) {
   var sessions = d.sessions || [];
   var body = document.getElementById('rawBody');
-  if (!sessions.length) { body.innerHTML = '<tr><td colspan="10" class="empty">暂无数据</td></tr>'; return; }
+  if (!sessions.length) { body.innerHTML = '<tr><td colspan="11" class="empty">暂无数据</td></tr>'; return; }
   body.innerHTML = sessions.map(function(s){
     var cost = calcCost(s.prompt_tokens||0, s.completion_tokens||0);
     var dur = s.duration ? Math.round(s.duration) + 's' : '-';
@@ -290,6 +290,7 @@ function renderSessionsTable(d) {
       '<td style="color:#aaa;font-size:12px">' + dur + '</td>' +
       '<td style="color:#ccc;font-size:13px">' + (s.pages_visited||0) + '</td>' +
       '<td style="color:#aaa;font-size:11px;max-width:120px" title="' + (s.top_page||'') + '">' + (s.top_page||'-') + '</td>' +
+      '<td style="color:#666;font-size:11px;max-width:120px" title="' + (s.least_page||'') + '">' + (s.least_page||'-') + '</td>' +
       '<td style="color:#ccc;font-size:12px">' + (s.total_tokens ? fmtNum(s.total_tokens) : '-') + '</td>' +
       '<td style="color:#ffb300;font-size:12px">' + (s.total_tokens ? fmtCost(cost) : '-') + '</td>' +
     '</tr>';
