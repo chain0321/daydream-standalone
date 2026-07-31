@@ -81,8 +81,8 @@
 
   // ---- 暴露到全局 ----
   var api = {
-    /** 页面访问 */
-    pageview: function () {
+    /** 页面访问（可传入自定义路径，用于 SPA 内页追踪） */
+    pageview: function (customPath) {
       var info = deviceInfo();
       send({
         eventType: '页面访问',
@@ -92,7 +92,7 @@
         screen: info.screen,
         language: info.language,
         referrer: info.referrer,
-        pagePath: info.pagePath
+        pagePath: customPath || info.pagePath
       });
     },
     /** API 调用 */
@@ -158,10 +158,12 @@
     if (document.hidden) {
       api.pageLeave();
     } else {
-      // 页面恢复可见：如果空闲超过阈值，重置访问起始时间（新的一轮访问）
+      // 页面恢复可见：如果空闲超过阈值，视为一次新的访问
       if (Date.now() - _lastActivity > _IDLE_TIMEOUT) {
         sessionStorage.setItem(VISIT_START_KEY, Date.now().toString());
+        sessionStorage.setItem(SESSION_KEY, 's_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8));
         _lastActivity = Date.now();
+        api.pageview();
       }
     }
   });

@@ -2006,6 +2006,10 @@
   }
 
   function render() {
+    // SPA 页面追踪：每次渲染即为一次页面切换
+    if (window._daydreamAnalytics) {
+      window._daydreamAnalytics.pageview("/" + state.phase);
+    }
     if (state.phase === "world") {
       app.innerHTML = renderWorld();
       requestAnimationFrame(function () {
