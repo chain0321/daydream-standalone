@@ -533,16 +533,11 @@
    * API Key 通过 GitHub Actions 在部署时注入，不在源码中存储。
    */
 
-  /** Clarity 分析：记录 API 调用（不阻塞、静默失败，不影响原有功能） */
+  /** 飞书分析：记录 API 调用（不阻塞、静默失败，不影响原有功能） */
   function trackAPICall(operation, status, durationMs, model) {
     try {
-      if (typeof window !== "undefined" && typeof window.clarity === "function") {
-        window.clarity("event", "api-call", {
-          operation: operation,
-          status: status,
-          duration: Math.round(durationMs),
-          model: model || API.model
-        });
+      if (typeof window !== "undefined" && window._daydreamAnalytics && window._daydreamAnalytics.apiCall) {
+        window._daydreamAnalytics.apiCall(operation, status, durationMs, model);
       }
     } catch (ignore) { /* 分析失败不影响主功能 */ }
   }

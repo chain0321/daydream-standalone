@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>数据看板 · Daydream Analytics</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font:14px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0f0f0f;color:#e0e0e0;min-height:100vh}
+    .header{background:#1a1a1a;border-bottom:1px solid #2a2a2a;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+    .header h1{font-size:20px;font-weight:600;color:#fff}
+    .header select,.header button{background:#252525;color:#e0e0e0;border:1px solid #333;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer}
+    .header select:hover,.header button:hover{background:#333}
+    .container{max-width:1200px;margin:0 auto;padding:24px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+    .kpi{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px}
+    .kpi .label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+    .kpi .value{font-size:28px;font-weight:700;color:#fff}
+    .kpi .sub{font-size:12px;color:#666;margin-top:4px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+    @media(max-width:768px){.grid{grid-template-columns:1fr}}
+    .card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px}
+    .card h3{font-size:14px;color:#aaa;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #252525;font-size:13px}
+    th{color:#888;font-weight:500}
+    .bar{display:inline-block;height:6px;background:#4a90d9;border-radius:3px;vertical-align:middle;margin-right:8px}
+    .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+    .tag-s{background:#1a3a2a;color:#4caf50}
+    .tag-e{background:#3a1a1a;color:#f44336}
+    .tag-t{background:#3a2a1a;color:#ff9800}
+    .device-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+    .device-bar .name{width:60px;font-size:12px;color:#aaa}
+    .device-bar .track{flex:1;height:20px;background:#252525;border-radius:4px;overflow:hidden}
+    .device-bar .fill{height:100%;border-radius:4px;transition:width .3s}
+    .fill-desk{background:#4a90d9}.fill-mobi{background:#50c878}.fill-tabl{background:#ff9800}
+    .empty{text-align:center;padding:40px;color:#666}
+    .refresh{font-size:11px;color:#555;margin-left:8px}
+  </style>
+</head>
+<body>
+<div class="header">
+  <h1>📊 数据看板</h1>
+  <div style="display:flex;align-items:center;gap:10px">
+    <select id="project" onchange="load()">
+      <option value="daydream">Daydream 白日幻想</option>
+    </select>
+    <select id="days" onchange="load()">
+      <option value="1">今天</option>
+      <option value="3">3 天</option>
+      <option value="7" selected>7 天</option>
+      <option value="14">14 天</option>
+      <option value="30">30 天</option>
+    </select>
+    <button onclick="load()">刷新</button>
+  </div>
+</div>
+<div class="container">
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="label">页面访问 (PV)</div><div class="value" id="pv">-</div></div>
+    <div class="kpi"><div class="label">独立访客 (UV)</div><div class="value" id="uv">-</div></div>
+    <div class="kpi"><div class="label">API 调用</div><div class="value" id="api">-</div><div class="sub" id="apiSub"></div></div>
+    <div class="kpi"><div class="label">平均停留</div><div class="value" id="dur">-</div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>📈 每日趋势</h3><div id="chart" style="height:200px;display:flex;align-items:end;gap:4px;padding:8px 0"></div></div>
+    <div class="card"><h3>📱 设备分布</h3><div id="devices"></div></div>
+  </div>
+  <div class="grid">
+    <div class="card"><h3>📄 热门页面</h3><div id="pages"></div></div>
+    <div class="card"><h3>⚡ 最近事件</h3><div id="recent" style="max-height:300px;overflow-y:auto"></div></div>
+  </div>
+</div>
+<script>
+const API = 'https://daydream-analytics.798169215.workers.dev';
+
+async function load() {
+  const project = document.getElementById('project').value;
+  const days = document.getElementById('days').value;
+  try {
+    const res = await fetch(`${API}/api/stats?project=${project}&days=${days}`);
+    const d = await res.json();
+    renderKPI(d);
+    renderChart(d.byDate || []);
+    renderDevices(d.byDevice || []);
+    renderPages(d.byPage || []);
+    renderRecent(d.recent || []);
+  } catch(e) {
+    document.getElementById('pv').textContent = '加载失败';
+  }
+}
+
+function loadProjects() {
+  fetch(`${API}/api/projects`).then(r => r.json()).then(list => {
+    const sel = document.getElementById('project');
+    if (Array.isArray(list)) list.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.project_id;
+      opt.textContent = p.project_id;
+      if (!sel.querySelector(`[value="${p.project_id}"]`)) sel.appendChild(opt);
+    });
+    load();
+  }).catch(() => load());
+}
+
+function renderKPI(d) {
+  document.getElementById('pv').textContent = d.total?.pv || 0;
+  document.getElementById('uv').textContent = d.total?.uv || 0;
+  const calls = d.apiStats?.total_calls || 0;
+  const err = d.apiStats?.error || 0;
+  document.getElementById('api').textContent = calls;
+  document.getElementById('apiSub').textContent = calls ? `成功 ${d.apiStats?.success||0} · 失败 ${err} · 均 ${Math.round(d.apiStats?.avg_ms||0)}ms` : '';
+  const dur = d.total?.avg_duration;
+  document.getElementById('dur').textContent = dur ? `${Math.round(dur)}s` : '-';
+}
+
+function renderChart(dates) {
+  const el = document.getElementById('chart');
+  if (!dates.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+  const max = Math.max(...dates.map(d=>d.pv), 1);
+  el.innerHTML = dates.map(d => {
+    const h = (d.pv / max * 100).toFixed(0);
+    return `<div style="flex:1;text-align:center;font-size:10px;color:#888">
+      <div style="font-size:11px;color:#ccc;margin-bottom:2px">${d.pv}</div>
+      <div style="background:#4a90d9;height:${Math.max(h,2)}%;border-radius:3px 3px 0 0;min-height:4px"></div>
+      <div style="margin-top:4px">${(d.date||'').slice(5)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDevices(devices) {
+  const el = document.getElementById('devices');
+  if (!devices.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+  const total = devices.reduce((s,d)=>s+d.count,0);
+  const colors = {desktop:'fill-desk',mobile:'fill-mobi',tablet:'fill-tabl'};
+  el.innerHTML = devices.map(d => `
+    <div class="device-bar">
+      <span class="name">${d.device==='desktop'?'🖥 桌面':d.device==='mobile'?'📱 移动':'📋 平板'}</span>
+      <div class="track"><div class="fill ${colors[d.device]||'fill-desk'}" style="width:${(d.count/total*100).toFixed(1)}%"></div></div>
+      <span style="font-size:12px;color:#888">${d.count} (${(d.count/total*100).toFixed(1)}%)</span>
+    </div>
+  `).join('');
+}
+
+function renderPages(pages) {
+  const el = document.getElementById('pages');
+  if (!pages.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+  const max = Math.max(...pages.map(p=>p.count));
+  el.innerHTML = `<table>${pages.map((p,i) => `
+    <tr><td style="color:#ccc">${p.page_path||'/'}</td><td style="width:120px"><span class="bar" style="width:${(p.count/max*80).toFixed(0)}px"></span></td><td style="color:#888;text-align:right">${p.count}</td></tr>
+  `).join('')}</table>`;
+}
+
+function renderRecent(events) {
+  const el = document.getElementById('recent');
+  if (!events.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
+  el.innerHTML = `<table>${events.slice(0,15).map(e => `
+    <tr>
+      <td style="color:#666;font-size:11px">${(e.created_at||'').replace('T',' ').slice(0,19)}</td>
+      <td><span class="tag ${e.event_type==='API调用'?(e.api_status==='success'?'tag-s':'tag-e'):'tag-t'}">${e.event_type||''}</span></td>
+      <td style="color:#aaa;font-size:12px">${e.page_path||''} ${e.operation||''}</td>
+      <td style="color:#888;font-size:11px">${e.device||''} · ${e.os||''} · ${e.browser||''}</td>
+    </tr>
+  `).join('')}</table>`;
+}
+
+loadProjects();
+</script>
+</body>
+</html>

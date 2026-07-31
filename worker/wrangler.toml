@@ -1,0 +1,11 @@
+name = "daydream-analytics"
+main = "index.js"
+compatibility_date = "2025-07-31"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "daydream-analytics-db"
+database_id = "1aaf94fe-b76c-4c8f-a7a7-fb4f9121d6d8"
+
+[vars]
+CORS_ORIGIN = "*"

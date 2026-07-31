@@ -32,11 +32,17 @@ jobs:
             sed -i "s/__DEEPSEEK_API_KEY__/${{ secrets.DEEPSEEK_API_KEY }}/g" ai-service.js
             echo "API key injected successfully."
           fi
-          if [ -z "${{ secrets.CLARITY_PROJECT_ID }}" ]; then
-            echo "::warning::CLARITY_PROJECT_ID secret is not set. Clarity analytics disabled."
+          if [ -z "${{ secrets.ANALYTICS_WORKER_URL }}" ]; then
+            echo "::warning::ANALYTICS_WORKER_URL secret is not set. Analytics disabled."
           else
-            sed -i "s/__CLARITY_PROJECT_ID__/${{ secrets.CLARITY_PROJECT_ID }}/g" index.html
-            echo "Clarity project ID injected successfully."
+            sed -i "s|__ANALYTICS_WORKER_URL__|${{ secrets.ANALYTICS_WORKER_URL }}|g" analytics.js
+            echo "Analytics worker URL injected successfully."
+          fi
+          if [ -z "${{ secrets.ANALYTICS_PROJECT_ID }}" ]; then
+            echo "::warning::ANALYTICS_PROJECT_ID secret not set. Using default."
+          else
+            sed -i "s|__ANALYTICS_PROJECT_ID__|${{ secrets.ANALYTICS_PROJECT_ID }}|g" analytics.js
+            echo "Analytics project ID injected."
           fi
 
       - name: Setup Pages
