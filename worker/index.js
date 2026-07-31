@@ -204,7 +204,7 @@ export default {
 
         // 分页数据
         const { results } = await env.DB.prepare(`
-          SELECT id, project_id, session_id, event_type, page_path, device, os, browser,
+          SELECT id, project_id, visitor_id, session_id, event_type, page_path, device, os, browser,
             screen, duration, operation, api_status, api_duration, model,
             prompt_tokens, completion_tokens, total_tokens,
             country, language, referrer, created_at
