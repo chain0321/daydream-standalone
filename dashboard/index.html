@@ -134,6 +134,17 @@ function fmtNum(n) {
   return String(n);
 }
 
+// D1 存储 UTC 时间（无时区后缀），转为本地时间显示
+function toLocal(utcStr) {
+  if (!utcStr) return '-';
+  // 补 Z 后缀让 JS 识别为 UTC，再自动转本地
+  var d = new Date(utcStr.replace(' ', 'T') + 'Z');
+  if (isNaN(d.getTime())) return utcStr;
+  var pad = function(n){ return n < 10 ? '0' + n : n; };
+  return d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate()) + ' ' +
+    pad(d.getHours()) + ':' + pad(d.getMinutes());
+}
+
 function togglePricing() {
   var p = document.getElementById('pricingPanel');
   p.classList.toggle('show');
@@ -210,7 +221,7 @@ function renderChart(dates) {
     return '<div style="flex:1;text-align:center;font-size:10px;color:#888">' +
       '<div style="font-size:11px;color:#ccc;margin-bottom:2px">' + d.pv + '</div>' +
       '<div style="background:#4a90d9;height:' + Math.max(h,2) + '%;border-radius:3px 3px 0 0;min-height:4px"></div>' +
-      '<div style="margin-top:4px">' + (d.date||'').slice(5) + '</div>' +
+      '<div style="margin-top:4px">' + toLocal((d.date||'') + ' 12:00:00').slice(5,10) + '</div>' +
     '</div>';
   }).join('');
 }
@@ -266,7 +277,7 @@ function renderSessionsTable(d) {
     var cost = calcCost(s.prompt_tokens||0, s.completion_tokens||0);
     var dur = s.duration ? Math.round(s.duration) + 's' : '-';
     return '<tr>' +
-      '<td style="color:#ccc;font-size:12px">' + (s.first_seen||'').replace('T',' ').slice(0,16) + '</td>' +
+      '<td style="color:#ccc;font-size:12px">' + toLocal(s.first_seen) + '</td>' +
       '<td style="color:#aaa;font-size:12px">' + (DEVICE_NAMES[s.device]||s.device||'-') + '</td>' +
       '<td style="color:#888;font-size:11px">' + (s.os||'-') + '</td>' +
       '<td style="color:#888;font-size:11px">' + (s.browser||'-') + '</td>' +
