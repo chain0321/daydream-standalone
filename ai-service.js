@@ -534,10 +534,10 @@
    */
 
   /** 飞书分析：记录 API 调用（不阻塞、静默失败，不影响原有功能） */
-  function trackAPICall(operation, status, durationMs, model) {
+  function trackAPICall(operation, status, durationMs, model, tokens) {
     try {
       if (typeof window !== "undefined" && window._daydreamAnalytics && window._daydreamAnalytics.apiCall) {
-        window._daydreamAnalytics.apiCall(operation, status, durationMs, model);
+        window._daydreamAnalytics.apiCall(operation, status, durationMs, model, tokens);
       }
     } catch (ignore) { /* 分析失败不影响主功能 */ }
   }
@@ -626,7 +626,12 @@
         throw new Error("API 返回空内容，reasoning 消耗了输出预算");
       }
       if (!content.trim()) throw new Error("API 返回空内容");
-      trackAPICall(operationTag, "success", Date.now() - startTime, API.model);
+      var usage = data.usage || {};
+      trackAPICall(operationTag, "success", Date.now() - startTime, API.model, {
+        prompt: usage.prompt_tokens || 0,
+        completion: usage.completion_tokens || 0,
+        total: usage.total_tokens || 0
+      });
       return content.trim();
     }).catch(function (err) {
       clearTimeout(timer);
@@ -649,6 +654,7 @@
     var timer = setTimeout(function () { controller.abort(); }, API.timeout);
     var fullContent = "";
     var finishReason = null;
+    var streamUsage = null;
 
     return fetch(API.endpoint, {
       method: "POST",
@@ -680,6 +686,8 @@
           if (!payload || payload === "[DONE]") return;
           try {
             var json = JSON.parse(payload);
+            // 捕获流式响应中的 usage 信息（DeepSeek 在最后一个 chunk 返回）
+            if (json.usage) streamUsage = json.usage;
             var choice = json.choices && json.choices[0];
             if (!choice) return;
             if (choice.finish_reason) finishReason = choice.finish_reason;
@@ -705,7 +713,11 @@
                 reject(new Error("API 返回空内容（stream）"));
                 return;
               }
-              trackAPICall(operationTag, "success", Date.now() - startTime, API.model);
+              trackAPICall(operationTag, "success", Date.now() - startTime, API.model, streamUsage ? {
+                prompt: streamUsage.prompt_tokens || 0,
+                completion: streamUsage.completion_tokens || 0,
+                total: streamUsage.total_tokens || 0
+              } : null);
               resolve(fullContent.trim());
               return;
             }

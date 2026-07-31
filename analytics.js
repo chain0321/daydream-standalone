@@ -96,8 +96,8 @@
       });
     },
     /** API 调用 */
-    apiCall: function (operation, status, durationMs, model) {
-      send({
+    apiCall: function (operation, status, durationMs, model, tokens) {
+      var payload = {
         eventType: 'API调用',
         operation: operation,
         apiStatus: status,
@@ -105,7 +105,13 @@
         model: model || '',
         pagePath: location.pathname,
         device: deviceInfo().device
-      });
+      };
+      if (tokens) {
+        payload.promptTokens = tokens.prompt || 0;
+        payload.completionTokens = tokens.completion || 0;
+        payload.totalTokens = tokens.total || 0;
+      }
+      send(payload);
     },
     /** 页面离开（记录停留时长） */
     pageLeave: function () {

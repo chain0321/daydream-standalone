@@ -55,8 +55,8 @@ export default {
         const ua = (body.userAgent || request.headers.get('User-Agent') || '').toLowerCase();
 
         await env.DB.prepare(`
-          INSERT INTO events (project_id, session_id, event_type, page_path, device, os, browser, screen, duration, operation, api_status, api_duration, model, country, language, referrer)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          INSERT INTO events (project_id, session_id, event_type, page_path, device, os, browser, screen, duration, operation, api_status, api_duration, model, country, language, referrer, prompt_tokens, completion_tokens, total_tokens)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).bind(
           body.project || 'daydream',
           body.sessionId || '',
@@ -73,7 +73,10 @@ export default {
           body.model || '',
           body.country || '',
           body.language || '',
-          body.referrer || ''
+          body.referrer || '',
+          body.promptTokens || 0,
+          body.completionTokens || 0,
+          body.totalTokens || 0
         ).run();
 
         return json({ ok: true });
@@ -101,13 +104,19 @@ export default {
       try {
         const project = url.searchParams.get('project') || 'daydream';
         const days = parseInt(url.searchParams.get('days') || '7');
+        const since = `-${days} days`;
 
-        // 总览
+        // 总览：PV, UV, 平均停留, 独立页面数
         const total = await env.DB.prepare(`
           SELECT COUNT(*) as pv, COUNT(DISTINCT session_id) as uv,
-            AVG(duration) as avg_duration
+            AVG(duration) as avg_duration,
+            COUNT(DISTINCT page_path) as unique_pages
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
-        `).bind(project, `-${days} days`).first();
+        `).bind(project, since).first();
+
+        // 平均页面访问 = 独立页面数 / UV
+        const uv = total?.uv || 1;
+        const avgPagesPerVisitor = total?.unique_pages ? (total.unique_pages / uv).toFixed(1) : '0';
 
         // 按日期
         const byDate = await env.DB.prepare(`
@@ -115,14 +124,14 @@ export default {
             COUNT(DISTINCT session_id) as uv
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
           GROUP BY date(created_at) ORDER BY date
-        `).bind(project, `-${days} days`).all();
+        `).bind(project, since).all();
 
-        // 设备分布
+        // 设备分布 — 按 UV（独立访客）统计
         const byDevice = await env.DB.prepare(`
-          SELECT device, COUNT(*) as count
+          SELECT device, COUNT(DISTINCT session_id) as count
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?) AND device != ''
           GROUP BY device
-        `).bind(project, `-${days} days`).all();
+        `).bind(project, since).all();
 
         // 页面排行
         const byPage = await env.DB.prepare(`
@@ -130,40 +139,88 @@ export default {
           FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
             AND event_type = '页面访问' AND page_path != ''
           GROUP BY page_path ORDER BY count DESC LIMIT 10
-        `).bind(project, `-${days} days`).all();
+        `).bind(project, since).all();
 
-        // API 调用统计
+        // API 调用统计（含 token）
         const apiStats = await env.DB.prepare(`
           SELECT COUNT(*) as total_calls,
             SUM(CASE WHEN api_status = 'success' THEN 1 ELSE 0 END) as success,
             SUM(CASE WHEN api_status = 'error' THEN 1 ELSE 0 END) as error,
-            AVG(api_duration) as avg_ms
+            AVG(api_duration) as avg_ms,
+            COALESCE(SUM(total_tokens), 0) as total_tokens,
+            COALESCE(SUM(prompt_tokens), 0) as total_prompt_tokens,
+            COALESCE(SUM(completion_tokens), 0) as total_completion_tokens,
+            CASE WHEN COUNT(*) > 0 THEN COALESCE(AVG(total_tokens), 0) ELSE 0 END as avg_tokens_per_call
           FROM events WHERE project_id = ? AND event_type = 'API调用'
             AND created_at >= datetime('now', ?)
-        `).bind(project, `-${days} days`).first();
-
-        // 最近事件
-        const recent = await env.DB.prepare(`
-          SELECT * FROM events WHERE project_id = ?
-          ORDER BY created_at DESC LIMIT 20
-        `).bind(project).all();
+        `).bind(project, since).first();
 
         return json({
           project,
-          total: total || {},
+          total: {
+            pv: total?.pv || 0,
+            uv: total?.uv || 0,
+            avg_duration: total?.avg_duration || 0,
+            avg_pages_per_visitor: parseFloat(avgPagesPerVisitor) || 0,
+          },
           byDate: byDate.results || [],
           byDevice: byDevice.results || [],
           byPage: byPage.results || [],
-          apiStats: apiStats || {},
-          recent: recent.results || [],
+          apiStats: {
+            total_calls: apiStats?.total_calls || 0,
+            success: apiStats?.success || 0,
+            error: apiStats?.error || 0,
+            avg_ms: apiStats?.avg_ms || 0,
+            total_tokens: apiStats?.total_tokens || 0,
+            total_prompt_tokens: apiStats?.total_prompt_tokens || 0,
+            total_completion_tokens: apiStats?.total_completion_tokens || 0,
+            avg_tokens_per_call: apiStats?.avg_tokens_per_call || 0,
+          },
         });
       } catch (err) {
         return json({ error: err.message }, 500);
       }
     }
 
-    // ====== GET / — 重定向到看板 ======
-    return new Response('Daydream Analytics API — /track /api/stats /api/projects', {
+    // ====== GET /api/events — 原始事件列表（分页） ======
+    if (path === '/api/events') {
+      try {
+        const project = url.searchParams.get('project') || 'daydream';
+        const days = parseInt(url.searchParams.get('days') || '7');
+        const page = Math.max(1, parseInt(url.searchParams.get('page') || '1'));
+        const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50')));
+        const offset = (page - 1) * limit;
+
+        // 总数
+        const countResult = await env.DB.prepare(`
+          SELECT COUNT(*) as total
+          FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
+        `).bind(project, `-${days} days`).first();
+
+        // 分页数据
+        const { results } = await env.DB.prepare(`
+          SELECT id, project_id, session_id, event_type, page_path, device, os, browser,
+            screen, duration, operation, api_status, api_duration, model,
+            prompt_tokens, completion_tokens, total_tokens,
+            country, language, referrer, created_at
+          FROM events WHERE project_id = ? AND created_at >= datetime('now', ?)
+          ORDER BY created_at DESC
+          LIMIT ? OFFSET ?
+        `).bind(project, `-${days} days`, limit, offset).all();
+
+        return json({
+          events: results || [],
+          total: countResult?.total || 0,
+          page,
+          limit,
+        });
+      } catch (err) {
+        return json({ error: err.message }, 500);
+      }
+    }
+
+    // ====== GET / — ======
+    return new Response('Daydream Analytics API — /track /api/stats /api/projects /api/events', {
       headers: { ...CORS, 'Content-Type': 'text/plain; charset=utf-8' },
     });
   },

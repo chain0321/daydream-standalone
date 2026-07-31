@@ -11,19 +11,34 @@
     .header h1{font-size:20px;font-weight:600;color:#fff}
     .header select,.header button{background:#252525;color:#e0e0e0;border:1px solid #333;padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer}
     .header select:hover,.header button:hover{background:#333}
-    .container{max-width:1200px;margin:0 auto;padding:24px}
-    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:24px}
+    .container{max-width:1300px;margin:0 auto;padding:24px}
+    .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;margin-bottom:16px}
     .kpi{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px}
     .kpi .label{font-size:12px;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
     .kpi .value{font-size:28px;font-weight:700;color:#fff}
     .kpi .sub{font-size:12px;color:#666;margin-top:4px}
+    .token-section{margin-bottom:16px}
+    .token-toggle{cursor:pointer;color:#888;font-size:12px;user-select:none;margin-bottom:8px;display:inline-block}
+    .token-toggle:hover{color:#ccc}
+    .token-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:8px}
+    .token-card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px 18px}
+    .token-card .tl{font-size:11px;color:#777;margin-bottom:4px}
+    .token-card .tv{font-size:20px;font-weight:600;color:#fff}
+    .token-card .tv.green{color:#4caf50}
+    .token-card .tv.gold{color:#ffb300}
+    .pricing-panel{display:none;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:14px 18px;margin-bottom:12px}
+    .pricing-panel.show{display:block}
+    .pricing-panel label{font-size:12px;color:#888;margin-right:8px}
+    .pricing-panel input{width:80px;background:#252525;color:#e0e0e0;border:1px solid #333;border-radius:4px;padding:4px 8px;font-size:13px;text-align:right}
+    .pricing-panel span{font-size:12px;color:#666;margin:0 4px}
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
     @media(max-width:768px){.grid{grid-template-columns:1fr}}
     .card{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;padding:20px}
     .card h3{font-size:14px;color:#aaa;margin-bottom:14px;text-transform:uppercase;letter-spacing:.5px}
     table{width:100%;border-collapse:collapse}
     th,td{text-align:left;padding:8px 10px;border-bottom:1px solid #252525;font-size:13px}
-    th{color:#888;font-weight:500}
+    th{color:#888;font-weight:500;white-space:nowrap}
+    td{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
     .bar{display:inline-block;height:6px;background:#4a90d9;border-radius:3px;vertical-align:middle;margin-right:8px}
     .tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
     .tag-s{background:#1a3a2a;color:#4caf50}
@@ -35,7 +50,11 @@
     .device-bar .fill{height:100%;border-radius:4px;transition:width .3s}
     .fill-desk{background:#4a90d9}.fill-mobi{background:#50c878}.fill-tabl{background:#ff9800}
     .empty{text-align:center;padding:40px;color:#666}
-    .refresh{font-size:11px;color:#555;margin-left:8px}
+    .pagination{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px;font-size:13px;color:#888}
+    .pagination button{background:#252525;color:#e0e0e0;border:1px solid #333;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px}
+    .pagination button:hover{background:#333}
+    .pagination button:disabled{opacity:0.4;cursor:default}
+    .raw-wrap{overflow-x:auto}
   </style>
 </head>
 <body>
@@ -56,112 +75,219 @@
   </div>
 </div>
 <div class="container">
-  <div class="kpis" id="kpis">
-    <div class="kpi"><div class="label">页面访问 (PV)</div><div class="value" id="pv">-</div></div>
-    <div class="kpi"><div class="label">独立访客 (UV)</div><div class="value" id="uv">-</div></div>
-    <div class="kpi"><div class="label">API 调用</div><div class="value" id="api">-</div><div class="sub" id="apiSub"></div></div>
-    <div class="kpi"><div class="label">平均停留</div><div class="value" id="dur">-</div></div>
+  <!-- KPI -->
+  <div class="kpis" id="kpis"></div>
+
+  <!-- Token 费用 -->
+  <div class="token-section">
+    <div class="token-toggle" onclick="togglePricing()">💰 Token 消耗与费用 ▾</div>
+    <div class="token-cards" id="tokenCards"></div>
+    <div class="pricing-panel" id="pricingPanel">
+      <span style="font-size:12px;color:#888">计价方案（¥/百万token）：</span>
+      <label>输入</label><input id="priceInput" type="number" step="0.1" value="1" onchange="recalc()">
+      <span>元</span>
+      <label style="margin-left:12px">输出</label><input id="priceOutput" type="number" step="0.1" value="2" onchange="recalc()">
+      <span>元</span>
+      <span style="font-size:11px;color:#555;margin-left:8px">（DeepSeek 标准定价，可修改）</span>
+    </div>
   </div>
+
+  <!-- 趋势 + 设备 -->
   <div class="grid">
     <div class="card"><h3>📈 每日趋势</h3><div id="chart" style="height:200px;display:flex;align-items:end;gap:4px;padding:8px 0"></div></div>
-    <div class="card"><h3>📱 设备分布</h3><div id="devices"></div></div>
+    <div class="card"><h3>📱 设备分布（按独立访客）</h3><div id="devices"></div></div>
   </div>
+
+  <!-- 热门页面 -->
   <div class="grid">
     <div class="card"><h3>📄 热门页面</h3><div id="pages"></div></div>
-    <div class="card"><h3>⚡ 最近事件</h3><div id="recent" style="max-height:300px;overflow-y:auto"></div></div>
+  </div>
+
+  <!-- 原始数据 -->
+  <div class="card" style="margin-bottom:16px">
+    <h3>📋 原始数据</h3>
+    <div class="raw-wrap"><table><thead><tr>
+      <th>时间</th><th>事件</th><th>页面</th><th>设备</th><th>OS</th><th>浏览器</th><th>操作</th><th>状态</th><th>模型</th><th>Token</th><th>费用</th>
+    </tr></thead><tbody id="rawBody"></tbody></table></div>
+    <div class="pagination" id="rawPager"></div>
   </div>
 </div>
+
 <script>
 const API = 'https://agroupof10.com/api/backend/api/v1/analytics';
+let _stats = null;
+let _eventsPage = 1;
+let _eventsLimit = 50;
 
+function priceIn() { return parseFloat(document.getElementById('priceInput').value) || 0; }
+function priceOut() { return parseFloat(document.getElementById('priceOutput').value) || 0; }
+
+function calcCost(prompt, completion) {
+  return (prompt / 1e6) * priceIn() + (completion / 1e6) * priceOut();
+}
+
+function fmtCost(v) { return v < 0.01 ? '<¥0.01' : '¥' + v.toFixed(2); }
+
+function fmtNum(n) {
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(1)+'K';
+  return String(n);
+}
+
+function togglePricing() {
+  var p = document.getElementById('pricingPanel');
+  p.classList.toggle('show');
+}
+
+/* ====== 加载 ====== */
 async function load() {
-  const project = document.getElementById('project').value;
-  const days = document.getElementById('days').value;
+  var project = document.getElementById('project').value;
+  var days = document.getElementById('days').value;
   try {
-    const res = await fetch(`${API}/api/stats?project=${project}&days=${days}`);
-    const d = await res.json();
-    renderKPI(d);
-    renderChart(d.byDate || []);
-    renderDevices(d.byDevice || []);
-    renderPages(d.byPage || []);
-    renderRecent(d.recent || []);
+    var res = await fetch(API + '/api/stats?project=' + project + '&days=' + days);
+    _stats = await res.json();
+    renderKPI(_stats);
+    renderTokenCards(_stats);
+    renderChart(_stats.byDate || []);
+    renderDevices(_stats.byDevice || []);
+    renderPages(_stats.byPage || []);
+    loadEvents(1);
   } catch(e) {
-    document.getElementById('pv').textContent = '加载失败';
+    document.getElementById('kpis').innerHTML = '<div class="empty">加载失败</div>';
   }
 }
 
 function loadProjects() {
-  fetch(`${API}/api/projects`).then(r => r.json()).then(list => {
-    const sel = document.getElementById('project');
-    if (Array.isArray(list)) list.forEach(p => {
-      const opt = document.createElement('option');
+  fetch(API + '/api/projects').then(function(r){return r.json()}).then(function(list){
+    var sel = document.getElementById('project');
+    if (Array.isArray(list)) list.forEach(function(p){
+      var opt = document.createElement('option');
       opt.value = p.project_id;
       opt.textContent = p.project_id;
-      if (!sel.querySelector(`[value="${p.project_id}"]`)) sel.appendChild(opt);
+      if (!sel.querySelector('[value="' + p.project_id + '"]')) sel.appendChild(opt);
     });
     load();
-  }).catch(() => load());
+  }).catch(function(){ load(); });
 }
 
+/* ====== KPI ====== */
 function renderKPI(d) {
-  document.getElementById('pv').textContent = d.total?.pv || 0;
-  document.getElementById('uv').textContent = d.total?.uv || 0;
-  const calls = d.apiStats?.total_calls || 0;
-  const err = d.apiStats?.error || 0;
-  document.getElementById('api').textContent = calls;
-  document.getElementById('apiSub').textContent = calls ? `成功 ${d.apiStats?.success||0} · 失败 ${err} · 均 ${Math.round(d.apiStats?.avg_ms||0)}ms` : '';
-  const dur = d.total?.avg_duration;
-  document.getElementById('dur').textContent = dur ? `${Math.round(dur)}s` : '-';
+  var t = d.total || {};
+  var a = d.apiStats || {};
+  document.getElementById('kpis').innerHTML =
+    '<div class="kpi"><div class="label">🧑 独立访客 (UV)</div><div class="value">' + (t.uv||0) + '</div></div>' +
+    '<div class="kpi"><div class="label">⚡ API 调用次数</div><div class="value">' + (a.total_calls||0) + '</div><div class="sub">成功 ' + (a.success||0) + ' · 失败 ' + (a.error||0) + ' · 均 ' + Math.round(a.avg_ms||0) + 'ms</div></div>' +
+    '<div class="kpi"><div class="label">⏱ 平均停留时长</div><div class="value">' + (t.avg_duration ? Math.round(t.avg_duration) + 's' : '-') + '</div></div>' +
+    '<div class="kpi"><div class="label">📄 平均页面访问</div><div class="value">' + (t.avg_pages_per_visitor||'0') + '</div><div class="sub">独立页面数 ÷ UV</div></div>';
 }
 
+/* ====== Token 卡片 ====== */
+function renderTokenCards(d) {
+  var a = d.apiStats || {};
+  var totalCost = calcCost(a.total_prompt_tokens||0, a.total_completion_tokens||0);
+  document.getElementById('tokenCards').innerHTML =
+    '<div class="token-card"><div class="tl">总 Token 消耗</div><div class="tv">' + fmtNum(a.total_tokens||0) + '</div></div>' +
+    '<div class="token-card"><div class="tl">输入 Token</div><div class="tv">' + fmtNum(a.total_prompt_tokens||0) + '</div></div>' +
+    '<div class="token-card"><div class="tl">输出 Token</div><div class="tv">' + fmtNum(a.total_completion_tokens||0) + '</div></div>' +
+    '<div class="token-card"><div class="tl">每次调用均 Token</div><div class="tv">' + Math.round(a.avg_tokens_per_call||0) + '</div></div>' +
+    '<div class="token-card"><div class="tl">预估费用</div><div class="tv gold">' + fmtCost(totalCost) + '</div></div>';
+}
+
+function recalc() {
+  if (_stats) renderTokenCards(_stats);
+  if (_stats) loadEvents(_eventsPage);
+}
+
+/* ====== 趋势图 ====== */
 function renderChart(dates) {
-  const el = document.getElementById('chart');
+  var el = document.getElementById('chart');
   if (!dates.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  const max = Math.max(...dates.map(d=>d.pv), 1);
-  el.innerHTML = dates.map(d => {
-    const h = (d.pv / max * 100).toFixed(0);
-    return `<div style="flex:1;text-align:center;font-size:10px;color:#888">
-      <div style="font-size:11px;color:#ccc;margin-bottom:2px">${d.pv}</div>
-      <div style="background:#4a90d9;height:${Math.max(h,2)}%;border-radius:3px 3px 0 0;min-height:4px"></div>
-      <div style="margin-top:4px">${(d.date||'').slice(5)}</div>
-    </div>`;
+  var max = Math.max.apply(null, dates.map(function(d){return d.pv;}));
+  max = max || 1;
+  el.innerHTML = dates.map(function(d){
+    var h = (d.pv / max * 100).toFixed(0);
+    return '<div style="flex:1;text-align:center;font-size:10px;color:#888">' +
+      '<div style="font-size:11px;color:#ccc;margin-bottom:2px">' + d.pv + '</div>' +
+      '<div style="background:#4a90d9;height:' + Math.max(h,2) + '%;border-radius:3px 3px 0 0;min-height:4px"></div>' +
+      '<div style="margin-top:4px">' + (d.date||'').slice(5) + '</div>' +
+    '</div>';
   }).join('');
 }
 
+/* ====== 设备分布（UV口径） ====== */
 function renderDevices(devices) {
-  const el = document.getElementById('devices');
+  var el = document.getElementById('devices');
   if (!devices.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  const total = devices.reduce((s,d)=>s+d.count,0);
-  const colors = {desktop:'fill-desk',mobile:'fill-mobi',tablet:'fill-tabl'};
-  el.innerHTML = devices.map(d => `
-    <div class="device-bar">
-      <span class="name">${d.device==='desktop'?'🖥 桌面':d.device==='mobile'?'📱 移动':'📋 平板'}</span>
-      <div class="track"><div class="fill ${colors[d.device]||'fill-desk'}" style="width:${(d.count/total*100).toFixed(1)}%"></div></div>
-      <span style="font-size:12px;color:#888">${d.count} (${(d.count/total*100).toFixed(1)}%)</span>
-    </div>
-  `).join('');
+  var total = devices.reduce(function(s,d){return s + d.count;}, 0);
+  var colors = {desktop:'fill-desk',mobile:'fill-mobi',tablet:'fill-tabl'};
+  var names = {desktop:'🖥 桌面',mobile:'📱 移动',tablet:'📋 平板'};
+  el.innerHTML = devices.map(function(d){
+    return '<div class="device-bar">' +
+      '<span class="name">' + (names[d.device]||d.device) + '</span>' +
+      '<div class="track"><div class="fill ' + (colors[d.device]||'fill-desk') + '" style="width:' + (d.count/total*100).toFixed(1) + '%"></div></div>' +
+      '<span style="font-size:12px;color:#888">' + d.count + ' UV (' + (d.count/total*100).toFixed(1) + '%)</span>' +
+    '</div>';
+  }).join('');
 }
 
+/* ====== 热门页面 ====== */
 function renderPages(pages) {
-  const el = document.getElementById('pages');
+  var el = document.getElementById('pages');
   if (!pages.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  const max = Math.max(...pages.map(p=>p.count));
-  el.innerHTML = `<table>${pages.map((p,i) => `
-    <tr><td style="color:#ccc">${p.page_path||'/'}</td><td style="width:120px"><span class="bar" style="width:${(p.count/max*80).toFixed(0)}px"></span></td><td style="color:#888;text-align:right">${p.count}</td></tr>
-  `).join('')}</table>`;
+  var max = Math.max.apply(null, pages.map(function(p){return p.count;}));
+  el.innerHTML = '<table>' + pages.map(function(p){
+    return '<tr><td style="color:#ccc">' + (p.page_path||'/') + '</td><td style="width:120px"><span class="bar" style="width:' + (p.count/max*80).toFixed(0) + 'px"></span></td><td style="color:#888;text-align:right">' + p.count + '</td></tr>';
+  }).join('') + '</table>';
 }
 
-function renderRecent(events) {
-  const el = document.getElementById('recent');
-  if (!events.length) { el.innerHTML = '<div class="empty">暂无数据</div>'; return; }
-  el.innerHTML = `<table>${events.slice(0,15).map(e => `
-    <tr>
-      <td style="color:#666;font-size:11px">${(e.created_at||'').replace('T',' ').slice(0,19)}</td>
-      <td><span class="tag ${e.event_type==='API调用'?(e.api_status==='success'?'tag-s':'tag-e'):'tag-t'}">${e.event_type||''}</span></td>
-      <td style="color:#aaa;font-size:12px">${e.page_path||''} ${e.operation||''}</td>
-      <td style="color:#888;font-size:11px">${e.device||''} · ${e.os||''} · ${e.browser||''}</td>
-    </tr>
-  `).join('')}</table>`;
+/* ====== 原始数据 ====== */
+async function loadEvents(page) {
+  _eventsPage = page || 1;
+  var project = document.getElementById('project').value;
+  var days = document.getElementById('days').value;
+  try {
+    var res = await fetch(API + '/api/events?project=' + project + '&days=' + days + '&page=' + _eventsPage + '&limit=' + _eventsLimit);
+    var d = await res.json();
+    renderRawTable(d);
+    renderPager(d);
+  } catch(e) {
+    document.getElementById('rawBody').innerHTML = '<tr><td colspan="11" class="empty">加载失败</td></tr>';
+  }
+}
+
+function renderRawTable(d) {
+  var events = d.events || [];
+  var body = document.getElementById('rawBody');
+  if (!events.length) { body.innerHTML = '<tr><td colspan="11" class="empty">暂无数据</td></tr>'; return; }
+  body.innerHTML = events.map(function(e){
+    var et = e.event_type||'';
+    var tagCls = et === 'API调用' ? (e.api_status === 'success' ? 'tag-s' : 'tag-e') : 'tag-t';
+    var cost = calcCost(e.prompt_tokens||0, e.completion_tokens||0);
+    return '<tr>' +
+      '<td style="color:#666;font-size:11px">' + (e.created_at||'').replace('T',' ').slice(0,19) + '</td>' +
+      '<td><span class="tag ' + tagCls + '">' + et + '</span></td>' +
+      '<td style="color:#aaa;font-size:12px">' + (e.page_path||'-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (e.device||'-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (e.os||'-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (e.browser||'-') + '</td>' +
+      '<td style="color:#aaa;font-size:12px">' + (e.operation||'-') + '</td>' +
+      '<td>' + (e.api_status ? '<span class="tag ' + (e.api_status==='success'?'tag-s':'tag-e') + '">' + e.api_status + '</span>' : '-') + '</td>' +
+      '<td style="color:#888;font-size:11px">' + (e.model||'-') + '</td>' +
+      '<td style="color:#ccc;font-size:12px">' + (e.total_tokens ? fmtNum(e.total_tokens) : '-') + '</td>' +
+      '<td style="color:#ffb300;font-size:12px">' + (e.total_tokens ? fmtCost(cost) : '-') + '</td>' +
+    '</tr>';
+  }).join('');
+}
+
+function renderPager(d) {
+  var total = d.total || 0;
+  var page = d.page || 1;
+  var limit = d.limit || _eventsLimit;
+  var totalPages = Math.ceil(total / limit);
+  document.getElementById('rawPager').innerHTML =
+    '<button ' + (page <= 1 ? 'disabled' : '') + ' onclick="loadEvents(' + (page-1) + ')">← 上一页</button>' +
+    '<span>第 ' + page + ' / ' + totalPages + ' 页（共 ' + total + ' 条）</span>' +
+    '<button ' + (page >= totalPages ? 'disabled' : '') + ' onclick="loadEvents(' + (page+1) + ')">下一页 →</button>';
 }
 
 loadProjects();

@@ -16,6 +16,9 @@ CREATE TABLE IF NOT EXISTS events (
   country TEXT,
   language TEXT,
   referrer TEXT,
+  prompt_tokens INTEGER DEFAULT 0,
+  completion_tokens INTEGER DEFAULT 0,
+  total_tokens INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
