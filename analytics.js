@@ -6,8 +6,6 @@
 (function () {
   'use strict';
 
-  console.log('[analytics] v4 已加载 — 含 visitorId 追踪 + 空闲截断');
-
   // ---- 配置 ----
   var WORKER_URL = '__ANALYTICS_WORKER_URL__';
   var PROJECT_ID = '__ANALYTICS_PROJECT_ID__';
@@ -40,13 +38,10 @@
       if (!vid) {
         vid = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
         localStorage.setItem(VISITOR_KEY, vid);
-        console.log('[analytics] 新 visitorId:', vid);
       }
-      console.log('[analytics] visitorId:', vid, 'sessionId:', getSessionId());
       return vid;
     } catch (e) {
       // localStorage 不可用，回退到 cookie
-      console.warn('[analytics] localStorage 不可用，使用 cookie');
       var cid = document.cookie.match(new RegExp('(?:^|; )' + VISITOR_KEY + '=([^;]*)'));
       if (!cid) {
         cid = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
@@ -54,7 +49,6 @@
       } else {
         cid = cid[1];
       }
-      console.log('[analytics] visitorId (cookie):', cid);
       return cid;
     }
   }
