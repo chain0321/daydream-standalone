@@ -62,7 +62,8 @@
   <h1>📊 数据看板</h1>
   <div style="display:flex;align-items:center;gap:10px">
     <select id="project" onchange="load()">
-      <option value="daydream">Daydream 白日幻想</option>
+      <option value="daydream">白日幻想</option>
+      <option value="trpg-shirengongzu">人格测试</option>
     </select>
     <select id="days" onchange="load()">
       <option value="1">今天</option>
@@ -154,6 +155,7 @@ function togglePricing() {
 async function load() {
   var project = document.getElementById('project').value;
   var days = document.getElementById('days').value;
+  document.title = '数据看板 · ' + projectName(project);
   try {
     var res = await fetch(API + '/api/stats?project=' + project + '&days=' + days);
     _stats = await res.json();
@@ -168,13 +170,16 @@ async function load() {
   }
 }
 
+var PROJECT_NAMES = { 'daydream': '白日幻想', 'trpg-shirengongzu': '人格测试' };
+function projectName(id) { return PROJECT_NAMES[id] || id; }
+
 function loadProjects() {
   fetch(API + '/api/projects').then(function(r){return r.json()}).then(function(list){
     var sel = document.getElementById('project');
     if (Array.isArray(list)) list.forEach(function(p){
       var opt = document.createElement('option');
       opt.value = p.project_id;
-      opt.textContent = p.project_id;
+      opt.textContent = projectName(p.project_id);
       if (!sel.querySelector('[value="' + p.project_id + '"]')) sel.appendChild(opt);
     });
     load();
