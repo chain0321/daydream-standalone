@@ -113,9 +113,14 @@
       }
       send(payload);
     },
-    /** 页面离开（记录停留时长） */
+    /** 页面离开（记录停留时长，空闲 > 3 分钟自动截断） */
     pageLeave: function () {
-      var duration = Math.round((Date.now() - getVisitStart()) / 1000);
+      var now = Date.now();
+      var start = getVisitStart();
+      // 如果距离最后一次操作超过 3 分钟，时长截断到最后的活跃时间
+      var idleGap = now - _lastActivity;
+      var endTime = idleGap > _IDLE_TIMEOUT ? _lastActivity : now;
+      var duration = Math.max(0, Math.round((endTime - start) / 1000));
       send({
         eventType: '页面离开',
         duration: duration,
@@ -124,6 +129,19 @@
       });
     }
   };
+
+  // ---- 空闲计时 ----
+  var _IDLE_TIMEOUT = 3 * 60 * 1000; // 3 分钟
+  var _lastActivity = Date.now();
+
+  function bumpActivity() {
+    _lastActivity = Date.now();
+  }
+
+  // 在捕获阶段监听用户操作，确保及时更新
+  ['click', 'scroll', 'keydown', 'touchstart', 'mousemove'].forEach(function (evt) {
+    document.addEventListener(evt, bumpActivity, { passive: true, capture: true });
+  });
 
   // ---- 自动采集 ----
   // 页面加载时
@@ -137,7 +155,15 @@
   window.addEventListener('beforeunload', api.pageLeave);
   // visibilitychange 作为备用（移动端切后台）
   document.addEventListener('visibilitychange', function () {
-    if (document.hidden) api.pageLeave();
+    if (document.hidden) {
+      api.pageLeave();
+    } else {
+      // 页面恢复可见：如果空闲超过阈值，重置访问起始时间（新的一轮访问）
+      if (Date.now() - _lastActivity > _IDLE_TIMEOUT) {
+        sessionStorage.setItem(VISIT_START_KEY, Date.now().toString());
+        _lastActivity = Date.now();
+      }
+    }
   });
 
   // 暴露给 ai-service.js 使用
