@@ -24,13 +24,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Inject API Key
+      - name: Inject Secrets
         run: |
           if [ -z "${{ secrets.DEEPSEEK_API_KEY }}" ]; then
             echo "::warning::DEEPSEEK_API_KEY secret is not set. Using placeholder."
           else
             sed -i "s/__DEEPSEEK_API_KEY__/${{ secrets.DEEPSEEK_API_KEY }}/g" ai-service.js
             echo "API key injected successfully."
+          fi
+          if [ -z "${{ secrets.CLARITY_PROJECT_ID }}" ]; then
+            echo "::warning::CLARITY_PROJECT_ID secret is not set. Clarity analytics disabled."
+          else
+            sed -i "s/__CLARITY_PROJECT_ID__/${{ secrets.CLARITY_PROJECT_ID }}/g" index.html
+            echo "Clarity project ID injected successfully."
           fi
 
       - name: Setup Pages

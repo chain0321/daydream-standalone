@@ -533,6 +533,20 @@
    * API Key 通过 GitHub Actions 在部署时注入，不在源码中存储。
    */
 
+  /** Clarity 分析：记录 API 调用（不阻塞、静默失败，不影响原有功能） */
+  function trackAPICall(operation, status, durationMs, model) {
+    try {
+      if (typeof window !== "undefined" && typeof window.clarity === "function") {
+        window.clarity("event", "api-call", {
+          operation: operation,
+          status: status,
+          duration: Math.round(durationMs),
+          model: model || API.model
+        });
+      }
+    } catch (ignore) { /* 分析失败不影响主功能 */ }
+  }
+
   /** 构建请求体 */
   function buildRequestBody(systemPrompt, userPrompt, opts, stream) {
     opts = opts || {};
@@ -583,6 +597,8 @@
       return callAIStream(systemPrompt, userPrompt, opts);
     }
 
+    var startTime = Date.now();
+    var operationTag = (opts.operationTag || "ai-call");
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, API.timeout);
 
@@ -615,10 +631,15 @@
         throw new Error("API 返回空内容，reasoning 消耗了输出预算");
       }
       if (!content.trim()) throw new Error("API 返回空内容");
+      trackAPICall(operationTag, "success", Date.now() - startTime, API.model);
       return content.trim();
     }).catch(function (err) {
       clearTimeout(timer);
-      if (err.name === "AbortError") throw new Error("请求超时");
+      if (err.name === "AbortError") {
+        trackAPICall(operationTag, "timeout", Date.now() - startTime, API.model);
+        throw new Error("请求超时");
+      }
+      trackAPICall(operationTag, "error", Date.now() - startTime, API.model);
       throw err;
     });
   }
@@ -627,6 +648,8 @@
   function callAIStream(systemPrompt, userPrompt, opts) {
     opts = opts || {};
     var onChunk = opts.onChunk || function () {};
+    var startTime = Date.now();
+    var operationTag = (opts.operationTag || "ai-call-stream");
     var controller = new AbortController();
     var timer = setTimeout(function () { controller.abort(); }, API.timeout);
     var fullContent = "";
@@ -678,13 +701,16 @@
             if (result.done) {
               clearTimeout(timer);
               if (finishReason && finishReason !== "stop") {
+                trackAPICall(operationTag, "finish-reason-" + finishReason, Date.now() - startTime, API.model);
                 reject(finishReasonError(finishReason));
                 return;
               }
               if (!fullContent.trim()) {
+                trackAPICall(operationTag, "empty-content", Date.now() - startTime, API.model);
                 reject(new Error("API 返回空内容（stream）"));
                 return;
               }
+              trackAPICall(operationTag, "success", Date.now() - startTime, API.model);
               resolve(fullContent.trim());
               return;
             }
@@ -697,6 +723,7 @@
             pump();
           }).catch(function (err) {
             clearTimeout(timer);
+            trackAPICall(operationTag, "stream-error", Date.now() - startTime, API.model);
             reject(err);
           });
         }
